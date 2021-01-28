@@ -1,6 +1,7 @@
 import * as vscode from 'vscode'
 import { LexError } from "./tokenize"
 import { lex } from "./parse"
+import NakoCompiler from './nako3/nako3'
 
 
 export function activate(context: vscode.ExtensionContext) {
@@ -118,6 +119,24 @@ export function activate(context: vscode.ExtensionContext) {
 						addSemanticToken(start, end, "keyword", ["declaration"])
 						break
 					case "func":
+						// 関数に「には」がついていれば、その部分を色付けする
+						if (token.josi === "には" || token.josi === "は~") {
+							const word = document.getText(new vscode.Range(start, end))
+							let josiPos: number
+							if (token.josi === "には") {
+								josiPos = word.lastIndexOf("には")
+							} else {
+								josiPos = word.lastIndexOf("は~")
+								if (josiPos === -1) {
+									josiPos = word.lastIndexOf("は〜")
+								}
+							}
+							if (josiPos !== -1) {
+								addSemanticToken(start, document.positionAt(token.startOffset + josiPos), "function", [])
+								addSemanticToken(document.positionAt(token.startOffset + josiPos), end, "keyword", [])
+								break
+							}
+						}
 						addSemanticToken(start, end, "function", [])
 						break
 					case "number":
@@ -190,26 +209,7 @@ export function activate(context: vscode.ExtensionContext) {
 						addSemanticToken(start, end, "string", [])
 						break
 					case "word":
-						if (token.josi === "には" || token.josi === "は~") {
-							// 「には」の部分だけ色付けする
-							const word = document.getText(new vscode.Range(start, end))
-							let josiPos: number
-							if (token.josi === "には") {
-								josiPos = word.lastIndexOf("には")
-							} else {
-								josiPos = word.lastIndexOf("は~")
-								if (josiPos === -1) {
-									josiPos = word.lastIndexOf("は〜")
-								}
-							}
-							if (josiPos !== -1) {
-								addSemanticToken(start, document.positionAt(token.startOffset + josiPos), "function", [])
-								addSemanticToken(document.positionAt(token.startOffset + josiPos), end, "keyword", [])
-							} else {
-								// もし「には」の部分を見つけられなかったら、関数呼び出しへフォールバック
-								addSemanticToken(start, end, "function", [])
-							}
-						} else if (token.value === "関数") {
+						if (token.value === "関数") {
 							addSemanticToken(start, end, "macro", [])
 						} else if (["それ", "そう"].includes(token.value as string)) {
 							addSemanticToken(start, end, "macro", [])
@@ -252,6 +252,13 @@ export function activate(context: vscode.ExtensionContext) {
 		}),
 		vscode.workspace.onDidCloseTextDocument((doc) => {
 			activeTextEditor = undefined
+		}),
+		vscode.commands.registerCommand("nadesiko3.runFile", () => {
+			if (activeTextEditor === undefined) {
+				vscode.window.showErrorMessage("ファイルが開かれていません")
+				return
+			}
+			vscode.window.showInformationMessage(new NakoCompiler().runReset(activeTextEditor.document.getText()).log)
 		}),
 	)
 }

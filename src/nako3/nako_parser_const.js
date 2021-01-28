@@ -1,5 +1,5 @@
 /** @type {Record<string, string>} */
-const opPriority = {
+export const opPriority = {
   // and or
   'and': 1,
   'or': 1,
@@ -25,11 +25,6 @@ const opPriority = {
   '^': 6
 }
 
-const keizokuJosi = [
+export const keizokuJosi = [
   'いて', 'えて', 'きて', 'けて', 'して', 'って', 'にて', 'みて', 'めて', 'ねて', 'には'
 ]
-
-export default {
-  opPriority,
-  keizokuJosi
-}

@@ -64,25 +64,19 @@ const plugins = ([
     plugin_datetime,
     plugin_csv,
     plugin_caniuse,
-] as any as Record<string, Record<string, unknown>>[]).map((plugin) => {
-    // 初期化コードを削除
-    delete plugin["初期化"]
-
-    // 全ての関数を削除
-    for (const entry of Object.values(plugin)) {
-        if ("fn" in entry) {
-            entry.fn = (...args: unknown[]) => { }
-        }
-    }
-    return plugin
-})
+] as any as Record<string, Record<string, unknown>>[])
 
 // NakoCompiler.addPlugin
 export default function getBuiltinFuncList() {
     const funclist: Record<string, unknown> = {}
     for (const plugin of plugins) {
         for (const [k, v] of Object.entries(plugin)) {
-            funclist[k] = { ...v }
+            // 初期化コードはスキップ
+            if (k === '初期化') {
+                continue
+            }
+            // 念の為呼び出せないようにしておく
+            funclist[k] = { ...v, fn: (...args: unknown[]) => { } }
         }
     }
     return funclist

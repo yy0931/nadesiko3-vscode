@@ -39,7 +39,13 @@ describe("lex", () => {
     })
     it("複数回呼び出し", () => {
         // キャッシュでバグったためテスト
-        expect(lex("# ああ")).to.deep.equal(lex("# ああ"))
+        const a = lex("# ああ")
+        const b = lex("# ああ")
+        if (a instanceof LexError || b instanceof LexError) {
+            throw new Error("error")
+        }
+        expect(a.tokens).to.deep.equal(a.tokens)
+        expect(a.commentTokens).to.deep.equal(a.commentTokens)
     })
 })
 

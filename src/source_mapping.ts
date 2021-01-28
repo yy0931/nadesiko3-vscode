@@ -11,11 +11,9 @@ class SourceMapping {
         })
     }
 
-    /**
-     * 一致するトークンの先頭へマップする。ただしファイルの末尾なら末尾の位置を返す。
-     */
+    /** preprocess後の文字列上のoffsetからソースコード上のoffsetへ変換 */
     public map(offsetOnPreprocessedCode: number): number {
-        // preprocess後の文字列上のoffsetからソースコード上のoffsetへ変換
+
         // TODO: 高速化
         let j = offsetOnPreprocessedCode
         for (let i = 0; i < this.preprocessed.length - 1; i++) {

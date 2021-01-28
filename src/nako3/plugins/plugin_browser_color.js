@@ -20,13 +20,13 @@ export default {
   'RGB': { // @赤緑青を256段階でそれぞれ指定して、#RRGGBB形式の値を返す // @RGB
     type: 'func',
     josi: [['と'], ['と'], ['で', 'の']],
-    fn: (...args) => { },
+    fn: (...args) => { throw new Error("Webブラウザ用の関数は呼び出せません。") },
     return_none: false
   },
   '色混': { // @配列で[RR,GG,BB]を指定して色を混ぜて#RRGGBB形式の値を返す // @いろまぜる
     type: 'func',
     josi: [['の']],
-    fn: (...args) => { },
+    fn: (...args) => { throw new Error("Webブラウザ用の関数は呼び出せません。") },
     return_none: false
   }
 }

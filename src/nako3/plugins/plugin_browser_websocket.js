@@ -21,16 +21,16 @@ export default {
   'WS接続': { // @WebSocketサーバsに接続する // @WSせつぞく
     type: 'func',
     josi: [['に', 'へ', 'の']],
-    fn: (...args) => { throw new Error("未実装") }
+    fn: (...args) => { throw new Error("Webブラウザ用の関数は呼び出せません。") }
   },
   'WS送信': { // @アクティブなWebSocketへsを送信する // @WSそうしん
     type: 'func',
     josi: [['を', 'と']],
-    fn: (...args) => { throw new Error("未実装") }
+    fn: (...args) => { throw new Error("Webブラウザ用の関数は呼び出せません。") }
   },
   'WS切断': { // @アクティブなWebSocketを閉じる // @WSせつだん
     type: 'func',
     josi: [],
-    fn: (...args) => { throw new Error("未実装") }
+    fn: (...args) => { throw new Error("Webブラウザ用の関数は呼び出せません。") }
   }
 }

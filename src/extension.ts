@@ -4,7 +4,6 @@ import { lex } from "./parse"
 
 
 export function activate(context: vscode.ExtensionContext) {
-	vscode.window.showInformationMessage("ok")
 	const tokenDecorationType = vscode.window.createTextEditorDecorationType({
 		after: {
 			backgroundColor: 'gray',

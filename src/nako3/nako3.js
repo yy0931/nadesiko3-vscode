@@ -26,6 +26,7 @@ class NakoCompiler {
     this.debugLexer = false || this.debugAll
     this.filename = 'inline'
     // 環境のリセット
+    /** @type {[Record<string, unknown>, Record<string, unknown>, Record<string, unknown>]} */
     this.__varslist = [{}, {}, {}] // このオブジェクトは変更しないこと (this.gen.__varslist と共有する)
     this.__self = this
     this.__vars = this.__varslist[2]

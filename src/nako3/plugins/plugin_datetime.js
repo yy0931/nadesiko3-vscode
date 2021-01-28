@@ -1,4 +1,6 @@
 import NakoRuntimeError from '../nako_runtime_error'
+import dayjs from "dayjs"
+import 'dayjs/locale/ja'
 
 export default {
   '初期化': {
@@ -36,7 +38,6 @@ export default {
     type: 'func',
     josi: [],
     fn: function () {
-      const dayjs = require('dayjs')
       return dayjs().format('HH:mm:ss')
     }
   },
@@ -44,7 +45,6 @@ export default {
     type: 'func',
     josi: [],
     fn: function () {
-      const dayjs = require('dayjs')
       return dayjs().unix()
     }
   },
@@ -52,7 +52,6 @@ export default {
     type: 'func',
     josi: [],
     fn: function () {
-      const dayjs = require('dayjs')
       return dayjs().format('YYYY/MM/DD')
     }
   },
@@ -60,7 +59,6 @@ export default {
     type: 'func',
     josi: [],
     fn: function () {
-      const dayjs = require('dayjs')
       return dayjs().add(1, 'days').format('YYYY/MM/DD')
     }
   },
@@ -68,7 +66,6 @@ export default {
     type: 'func',
     josi: [],
     fn: function () {
-      const dayjs = require('dayjs')
       return dayjs().subtract(1, 'days').format('YYYY/MM/DD')
     }
   },
@@ -76,7 +73,6 @@ export default {
     type: 'func',
     josi: [],
     fn: function () {
-      const dayjs = require('dayjs')
       return dayjs().year()
     }
   },
@@ -84,7 +80,6 @@ export default {
     type: 'func',
     josi: [],
     fn: function () {
-      const dayjs = require('dayjs')
       return dayjs().add(1, 'years').year()
     }
   },
@@ -92,7 +87,6 @@ export default {
     type: 'func',
     josi: [],
     fn: function () {
-      const dayjs = require('dayjs')
       return dayjs().subtract(1, 'years').year()
     }
   },
@@ -100,7 +94,6 @@ export default {
     type: 'func',
     josi: [],
     fn: function () {
-      const dayjs = require('dayjs')
       return dayjs().month() + 1
     }
   },
@@ -108,7 +101,6 @@ export default {
     type: 'func',
     josi: [],
     fn: function () {
-      const dayjs = require('dayjs')
       return dayjs().add(1, 'months').month() + 1
     }
   },
@@ -116,7 +108,6 @@ export default {
     type: 'func',
     josi: [],
     fn: function () {
-      const dayjs = require('dayjs')
       return dayjs().subtract(1, 'months').month() + 1
     }
   },
@@ -124,8 +115,6 @@ export default {
     type: 'func',
     josi: [['の']],
     fn: function (s) {
-      const dayjs = require('dayjs')
-      require('dayjs/locale/ja')
       return dayjs(s, 'YYYY/MM/DD').locale('ja').format('ddd')
     }
   },
@@ -133,9 +122,6 @@ export default {
     type: 'func',
     josi: [['の']],
     fn: function (s) {
-      const dayjs = require('dayjs')
-      require('dayjs/locale/ja')
-
       let t = dayjs(s, 'YYYY/MM/DD')
 
       if (!t.isValid()) {
@@ -156,7 +142,6 @@ export default {
     type: 'func',
     josi: [['の', 'を', 'から']],
     fn: function (s) {
-      const dayjs = require('dayjs')
       return dayjs(s, 'YYYY/MM/DD HH:mm:ss').unix()
     }
   },
@@ -164,7 +149,6 @@ export default {
     type: 'func',
     josi: [['を', 'から']],
     fn: function (tm) {
-      const dayjs = require('dayjs')
       return dayjs.unix(tm).format('YYYY/MM/DD HH:mm:ss')
     }
   },
@@ -172,7 +156,6 @@ export default {
     type: 'func',
     josi: [['を']],
     fn: function (s, sys) {
-      const dayjs = require('dayjs')
       const date = dayjs(s, 'YYYY/MM/DD')
 
       for (const era of sys.__v0['元号データ']) {
@@ -216,7 +199,6 @@ export default {
     type: 'func',
     josi: [['と', 'から'], ['の', 'までの'], ['による']],
     fn: function (a, b, unit) {
-      const dayjs = require('dayjs')
 
       switch (unit) {
         case '年':
@@ -334,7 +316,6 @@ export default {
     type: 'func',
     josi: [['に'], ['を']],
     fn: function (s, a) {
-      const dayjs = require('dayjs')
 
       let unit
 

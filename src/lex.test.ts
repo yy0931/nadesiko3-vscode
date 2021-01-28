@@ -110,4 +110,19 @@ describe("source mapping", () => {
     it("'_' + 改行", () => {
         expect(sourceMap(`[_\n]\nりんごの値段は30`)[5]).to.deep.equal({ value: '値段', start: 9, end: 12 })
     })
+    it("large file", () => {
+        const code = `A=20\n`.repeat(1000)
+        const preprocessed = prepare(code)
+
+        // TODO: インデント構文
+
+        // トークン分割
+        const tokens = tokenize(preprocessed.map((v) => v.text).join(""), 0, "")
+        if (tokens instanceof LexError) {
+            return tokens
+        }
+
+        // ソースマップを計算
+        const result = addSourceMapToTokens(tokens, preprocessed, code)
+    })
 })

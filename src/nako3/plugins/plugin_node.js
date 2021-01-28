@@ -7,6 +7,13 @@ import fse from 'fs-extra'
 import path from 'path'
 import fetch from 'node-fetch'
 import { exec, execSync } from 'child_process'
+import iconv from 'iconv-lite'
+import readline from "readline"
+import readlineSync from 'readline-sync'
+import assert from 'assert'
+import opener from 'opener'
+import os from 'os'
+import keys from 'sendkeys-js'
 
 export default {
   '初期化': {
@@ -79,7 +86,6 @@ export default {
     type: 'func',
     josi: [['を', 'から']],
     fn: function (s, sys) {
-      const iconv = require('iconv-lite')
       iconv.skipDecodeWarning = true
       const buf = fs.readFileSync(s)
       const text = iconv.decode(Buffer.from(buf), 'sjis')
@@ -90,7 +96,6 @@ export default {
     type: 'func',
     josi: [['を'], ['へ', 'に']],
     fn: function (s, f, sys) {
-      const iconv = require('iconv-lite')
       iconv.skipDecodeWarning = true
       const buf = iconv.encode(s, 'Shift_JIS')
       fs.writeFileSync(f, buf)
@@ -132,7 +137,6 @@ export default {
     type: 'func',
     josi: [['を']],
     fn: function (url) {
-      const opener = require('opener')
       opener(url)
     }
   },
@@ -492,7 +496,6 @@ export default {
     type: 'func',
     josi: [['を']],
     fn: function (v, sys) {
-      const ncp = require('copy-paste-win32fix')
       // copy
       if (sys && sys['isSetter']) { return ncp.copy(v) }
       // paste
@@ -507,7 +510,7 @@ export default {
     type: 'func',
     josi: [['を']],
     fn: function (callback) {
-      const reader = require('readline').createInterface({
+      const reader = readline.createInterface({
         input: process.stdin,
         output: process.stdout
       })
@@ -520,7 +523,6 @@ export default {
     type: 'func',
     josi: [['と', 'を']],
     fn: function (msg, sys) {
-      const readlineSync = require('readline-sync')
       const res = readlineSync.question(msg)
       if (res.match(/^[0-9.]+$/)) { return parseFloat(res) }
       return res
@@ -531,7 +533,6 @@ export default {
     type: 'func',
     josi: [['と'], ['が']],
     fn: function (a, b, sys) {
-      const assert = require('assert')
       assert.strictEqual(a, b)
     }
   },
@@ -540,7 +541,6 @@ export default {
     type: 'func',
     josi: [],
     fn: function (sys) {
-      const os = require('os')
       const nif = os.networkInterfaces()
       const result = []
       for (let dev in nif) {
@@ -556,7 +556,6 @@ export default {
     type: 'func',
     josi: [],
     fn: function (sys) {
-      const os = require('os')
       const nif = os.networkInterfaces()
       const result = []
       for (let dev in nif) {
@@ -668,7 +667,6 @@ export default {
     type: 'func',
     josi: [['の', 'を']],
     fn: function (code, sys) {
-      const iconv = require('iconv-lite')
       return iconv.encodingExists(code)
     }
   },
@@ -676,7 +674,6 @@ export default {
     type: 'func',
     josi: [['に', 'へ', 'を']],
     fn: function (str, sys) {
-      const iconv = require('iconv-lite')
       iconv.skipDecodeWarning = true
       return iconv.encode(str, 'Shift_JIS')
     }
@@ -685,7 +682,6 @@ export default {
     type: 'func',
     josi: [['から', 'を', 'で']],
     fn: function (buf, sys) {
-      const iconv = require('iconv-lite')
       iconv.skipDecodeWarning = true
       return iconv.decode(Buffer.from(buf), 'sjis')
     }
@@ -694,7 +690,6 @@ export default {
     type: 'func',
     josi: [['を'], ['へ', 'で']],
     fn: function (s, code, sys) {
-      const iconv = require('iconv-lite')
       iconv.skipDecodeWarning = true
       return iconv.encode(s, code)
     }
@@ -703,7 +698,6 @@ export default {
     type: 'func',
     josi: [['を'], ['から', 'で']],
     fn: function (buf, code, sys) {
-      const iconv = require('iconv-lite')
       iconv.skipDecodeWarning = true
       return iconv.decode(Buffer.from(buf), code)
     }
@@ -713,7 +707,6 @@ export default {
     type: 'func',
     josi: [['を', 'の']],
     fn: function (s, sys) {
-      const keys = require('sendkeys-js')
       keys.sendKeys(s)
     },
     return_none: true
@@ -722,7 +715,6 @@ export default {
     type: 'func',
     josi: [['を', 'の']],
     fn: function (s, sys) {
-      const keys = require('sendkeys-js')
       keys.activate(s)
     },
     return_none: true

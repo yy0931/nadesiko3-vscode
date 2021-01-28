@@ -1,4 +1,3 @@
-import NakoRuntimeError from '../nako_runtime_error'
 import NakoVersion from '../nako_version'
 
 export default {

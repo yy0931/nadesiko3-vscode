@@ -1,14 +1,7 @@
 import { Token, TokenWithSourceMap } from "./tokenize"
 
 class SourceMapping {
-    private cumulativeSum: number[]
     constructor(private readonly sourceCodeLength: number, private readonly preprocessed: { text: string; sourcePosition: number; }[]) {
-        // 累積和
-        let sum = 0
-        this.cumulativeSum = this.preprocessed.map((v) => {
-            sum += v.text.length
-            return sum
-        })
     }
 
     /** preprocess後の文字列上のoffsetからソースコード上のoffsetへ変換 */

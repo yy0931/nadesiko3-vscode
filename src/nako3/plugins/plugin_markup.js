@@ -3,8 +3,8 @@
  * マークアップ言語関連のプラグイン
  */
 
-import marked from "marked"
-import html from "html"
+const marked = require("marked")
+const html = require("html")
 
 export default {
   // @マークアップ

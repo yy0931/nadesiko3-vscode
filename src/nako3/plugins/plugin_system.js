@@ -1,4 +1,4 @@
-import NakoVersion from '../nako_version'
+const NakoVersion = require('../nako_version')
 
 export default {
   '初期化': {

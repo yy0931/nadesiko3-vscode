@@ -2,18 +2,18 @@
  * file: plugin_node.js
  * node.js のためのプラグイン
  */
-import fs from 'fs'
-import fse from 'fs-extra'
-import path from 'path'
-import fetch from 'node-fetch'
-import { exec, execSync } from 'child_process'
-import iconv from 'iconv-lite'
-import readline from "readline"
-import readlineSync from 'readline-sync'
-import assert from 'assert'
-import opener from 'opener'
-import os from 'os'
-import keys from 'sendkeys-js'
+const fs = require('fs')
+const fse = require('fs-extra')
+const path = require('path')
+const fetch = require('node-fetch')
+const { exec, execSync } = require('child_process')
+const iconv = require('iconv-lite')
+const readline = require("readline")
+const readlineSync = require('readline-sync')
+const assert = require('assert')
+const opener = require('opener')
+const os = require('os')
+const keys = require('sendkeys-js')
 
 export default {
   '初期化': {

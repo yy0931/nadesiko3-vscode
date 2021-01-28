@@ -2,8 +2,8 @@
  * file: plugin_express.js
  * Webサーバのためのプラグイン (expressをラップしたもの)
  */
-import express from "express"
-import bodyParser from "body-parser"
+const express = require("express")
+const bodyParser = require("body-parser")
 
 // 定数・変数
 let WEBSERVER_NAME = 'WEBサーバ(なでしこ+Express)'

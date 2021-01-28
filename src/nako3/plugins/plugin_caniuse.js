@@ -1,4 +1,4 @@
-import browserslist from 'browserslist'
+const browserslist = require('browserslist')
 const caniuseData = require('caniuse-db/data.json')
 
 export default {

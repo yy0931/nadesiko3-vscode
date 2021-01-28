@@ -1,4 +1,4 @@
-import * as csv from 'csv-lite-js'
+const csv = require('csv-lite-js')
 
 export default {
   '初期化': {

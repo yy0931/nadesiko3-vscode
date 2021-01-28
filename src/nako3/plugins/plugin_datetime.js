@@ -1,6 +1,6 @@
-import NakoRuntimeError from '../nako_runtime_error'
-import dayjs from "dayjs"
-import 'dayjs/locale/ja'
+const NakoRuntimeError = require('../nako_runtime_error')
+const dayjs = require("dayjs")
+require('dayjs/locale/ja')
 
 export default {
   '初期化': {

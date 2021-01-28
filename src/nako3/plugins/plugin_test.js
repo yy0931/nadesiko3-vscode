@@ -1,4 +1,4 @@
-import assert from "assert"
+const assert = require("assert")
 
 /**
  * file: plugin_test.js

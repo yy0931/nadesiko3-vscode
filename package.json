@@ -1,8 +1,14 @@
 {
-	"name": "nadeshiko3-vscode",
-	"displayName": "nadeshiko3-vscode",
+	"name": "nadesiko3-vscode",
+	"displayName": "nadesiko3-vscode",
 	"description": "",
 	"version": "1.0.0",
+	"license": "MIT",
+	"publisher": "yy0931",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/yy0931/nadesiko3-vscode"
+	},
 	"engines": {
 		"vscode": "^1.52.0"
 	},
@@ -10,13 +16,13 @@
 		"Programming Languages"
 	],
 	"activationEvents": [
-		"onLanguage:nadeshiko"
+		"onLanguage:nadesiko"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
 		"languages": [
 			{
-				"id": "nadeshiko",
+				"id": "nadesiko",
 				"extensions": [
 					".nako"
 				],

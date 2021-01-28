@@ -15,7 +15,7 @@ export function activate(context: vscode.ExtensionContext) {
 	})
 
 	const updateDecorations = (editor: vscode.TextEditor) => {
-		if (editor.document.languageId !== "nadeshiko") {
+		if (editor.document.languageId !== "nadesiko") {
 			editor.setDecorations(tokenDecorationType, [])
 			return
 		}
@@ -229,7 +229,7 @@ export function activate(context: vscode.ExtensionContext) {
 		updateDecorations(activeTextEditor)
 	}
 	context.subscriptions.push(
-		vscode.languages.registerDocumentSemanticTokensProvider({ language: "nadeshiko" }, semanticTokensProvider, legend),
+		vscode.languages.registerDocumentSemanticTokensProvider({ language: "nadesiko" }, semanticTokensProvider, legend),
 		vscode.window.onDidChangeActiveTextEditor((editor) => {
 			if (editor === undefined) {
 				return

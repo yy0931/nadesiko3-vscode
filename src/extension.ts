@@ -15,7 +15,7 @@ export function activate(context: vscode.ExtensionContext) {
 	})
 
 	const updateDecorations = (editor: vscode.TextEditor) => {
-		if (editor.document.languageId !== "nadesiko") {
+		if (editor.document.languageId !== "nadesiko3") {
 			editor.setDecorations(tokenDecorationType, [])
 			return
 		}
@@ -228,7 +228,7 @@ export function activate(context: vscode.ExtensionContext) {
 		updateDecorations(activeTextEditor)
 	}
 	context.subscriptions.push(
-		vscode.languages.registerDocumentSemanticTokensProvider({ language: "nadesiko" }, semanticTokensProvider, legend),
+		vscode.languages.registerDocumentSemanticTokensProvider({ language: "nadesiko3" }, semanticTokensProvider, legend),
 		vscode.window.onDidChangeActiveTextEditor((editor) => {
 			if (editor === undefined) {
 				return
@@ -237,14 +237,14 @@ export function activate(context: vscode.ExtensionContext) {
 			updateDecorations(editor)
 		}),
 		vscode.workspace.onDidChangeTextDocument((event) => {
-			let activeTextEditor = vscode.window.activeTextEditor
+			activeTextEditor = vscode.window.activeTextEditor
 			if (activeTextEditor === undefined) {
 				return
 			}
 			updateDecorations(activeTextEditor)
 		}),
 		vscode.workspace.onDidOpenTextDocument((document) => {
-			let activeTextEditor = vscode.window.activeTextEditor
+			activeTextEditor = vscode.window.activeTextEditor
 			if (activeTextEditor === undefined) {
 				return
 			}
@@ -254,6 +254,7 @@ export function activate(context: vscode.ExtensionContext) {
 			activeTextEditor = undefined
 		}),
 		vscode.commands.registerCommand("nadesiko3.runFile", () => {
+			activeTextEditor = vscode.window.activeTextEditor
 			if (activeTextEditor === undefined) {
 				vscode.window.showErrorMessage("ファイルが開かれていません")
 				return

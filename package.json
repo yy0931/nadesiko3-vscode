@@ -16,23 +16,40 @@
 		"Programming Languages"
 	],
 	"activationEvents": [
-		"onLanguage:nadesiko"
+		"onLanguage:nadesiko3"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
 		"languages": [
 			{
-				"id": "nadesiko",
+				"id": "nadesiko3",
 				"extensions": [
 					".nako"
 				],
 				"configuration": "./language/language-configuration.json"
 			}
 		],
+		"menus": {
+			"editor/title": [
+				{
+					"command": "nadesiko3.runFile",
+					"when": "editorLangId == nadesiko3",
+					"group": "1_run@10"
+				}
+			],
+			"commandPalette": [
+				{
+					"command": "nadesiko3.runFile",
+					"when": "editorLangId == nadesiko3"
+				}
+			]
+		},
 		"commands": [
 			{
 				"command": "nadesiko3.runFile",
-				"title": "Nadesiko3: Run Active File"
+				"title": "Nadesiko3: Run Active File",
+				"category": "Nadesiko3",
+				"icon": "$(play)"
 			}
 		]
 	},

@@ -1,0 +1,13 @@
+.vscode/**
+.vscode-test/**
+test/**
+.gitignore
+.yarnrc
+**/jsconfig.json
+.github/**
+.cache/**
+example/**
+update.sh
+src/
+
+# node_modulesを除外するとなでしこのプラグインを実行時に取得できなくなる。

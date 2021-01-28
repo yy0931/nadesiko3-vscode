@@ -1,0 +1,107 @@
+{
+	"name": "nadesiko3-vscode",
+	"displayName": "日本語プログラミング言語 なでしこv3",
+	"description": "",
+	"version": "1.21.5",
+	"license": "MIT",
+	"publisher": "yy0931",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/yy0931/nadesiko3-vscode"
+	},
+	"engines": {
+		"vscode": "^1.53.0"
+	},
+	"categories": [
+		"Programming Languages"
+	],
+	"activationEvents": [
+		"onLanguage:nadesiko3"
+	],
+	"main": "./out/extension.js",
+	"contributes": {
+		"configurationDefaults": {
+			"[nadesiko3]": {
+				"editor.wordSeparators": "`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?｀～！＠＃＄％＾＆＊（）－＝＋［｛］｝＼｜；：＇＂，．＜＞／？「」『』“”",
+				"editor.semanticHighlighting.enabled": true
+			}
+		},
+		"semanticTokenScopes": [
+			{
+				"language": "nadesiko3",
+				"scopes": {
+					"*.underline": [
+						"markup.underline"
+					]
+				}
+			}
+		],
+		"languages": [
+			{
+				"id": "nadesiko3",
+				"extensions": [
+					".nako3"
+				],
+				"configuration": "./language-configuration.json"
+			}
+		],
+		"menus": {
+			"editor/title/run": [
+				{
+					"command": "nadesiko3.runActiveFile",
+					"when": "editorLangId == nadesiko3"
+				}
+			],
+			"commandPalette": [
+				{
+					"command": "nadesiko3.runActiveFile",
+					"when": "editorLangId == nadesiko3"
+				},
+				{
+					"command": "nadesiko3.selectCompiler",
+					"when": "editorLangId == nadesiko3"
+				}
+			]
+		},
+		"commands": [
+			{
+				"command": "nadesiko3.runActiveFile",
+				"title": "Run Active File",
+				"category": "Nadesiko3",
+				"icon": "$(play)"
+			},
+			{
+				"command": "nadesiko3.testActiveFile",
+				"title": "Test Active File",
+				"category": "Nadesiko3",
+				"icon": "$(testing-run-icon)"
+			}
+		]
+	},
+	"scripts": {
+		"build": "esbuild --target=esnext --format=cjs --platform=node --outdir=nadesiko3-plugins --define:import.meta.url=import_meta_url --inject:./src/import.meta.url-polyfill.js node_modules/nadesiko3/src/*.mjs && node replace-mjs.js && esbuild --bundle --target=esnext --format=cjs --platform=node --outdir=out --external:vscode --define:import.meta.url=import_meta_url --inject:./src/import.meta.url-polyfill.js src/extension.ts",
+		"vscode:prepublish": "yarn build",
+		"install-extension": "vsce package --out out.vsix && code --install-extension ./out.vsix"
+	},
+	"devDependencies": {
+		"@types/fs-extra": "*",
+		"@types/glob": "*",
+		"@types/node": "~16.0.0",
+		"@types/semver": "*",
+		"@types/vscode": "~1.53.0",
+		"@types/vscode-webview": "^1.53.0",
+		"esbuild": "^0.14.38",
+		"nadesiko3doc": "git+https://github.com/kujirahand/nadesiko3doc",
+		"semver": "*",
+		"typescript": "*",
+		"vsce": "*",
+		"vscode-test": "*"
+	},
+	"dependencies": {
+		"abort-controller": "*",
+		"fs-extra": "*",
+		"glob": "*",
+		"nadesiko3": "git+https://github.com/kujirahand/nadesiko3.git",
+		"node-html-parser": "*"
+	}
+}

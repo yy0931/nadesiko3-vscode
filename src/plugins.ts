@@ -31,7 +31,7 @@ import plugin_datetime from "./nako3/plugins/plugin_datetime.js"
 import plugin_csv from "./nako3/plugins/plugin_csv.js"
 import plugin_caniuse from "./nako3/plugins/plugin_caniuse.js"
 
-const plugins = ([
+export const plugins = ([
     plugin_browser_ajax,
     plugin_browser_audio,
     plugin_browser_canvas,
@@ -67,7 +67,7 @@ const plugins = ([
 ] as any as Record<string, Record<string, unknown>>[])
 
 // NakoCompiler.addPlugin
-export default function getBuiltinFuncList() {
+export function getBuiltinFuncList() {
     const funclist: Record<string, unknown> = {}
     for (const plugin of plugins) {
         for (const [k, v] of Object.entries(plugin)) {

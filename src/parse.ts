@@ -2,7 +2,7 @@ import * as nakoParserConst from "./nako3/nako_parser_const"
 import { rawTokenize, tokenize, Token, LexError, TokenWithSourceMap } from "./tokenize"
 import reservedWords from "./nako3/nako_reserved_words"
 import josi from "./nako3/nako_josi_list"
-import getBuiltinFuncList from "./plugins"
+import { getBuiltinFuncList } from "./plugins"
 
 type FuncList = Record<string, Record<string, unknown>>
 

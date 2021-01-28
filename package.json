@@ -47,9 +47,14 @@
 		"commands": [
 			{
 				"command": "nadesiko3.runFile",
-				"title": "Nadesiko3: Run Active File",
+				"title": "Run Active File",
 				"category": "Nadesiko3",
 				"icon": "$(play)"
+			},
+			{
+				"command": "nadesiko3.compileFile",
+				"title": "Compile Current File",
+				"category": "Nadesiko3"
 			}
 		]
 	},

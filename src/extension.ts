@@ -2,6 +2,7 @@ import * as vscode from 'vscode'
 import { LexError } from "./tokenize"
 import { lex } from "./parse"
 import NakoCompiler from './nako3/nako3'
+import { plugins } from './plugins'
 
 
 export function activate(context: vscode.ExtensionContext) {
@@ -259,7 +260,62 @@ export function activate(context: vscode.ExtensionContext) {
 				vscode.window.showErrorMessage("ファイルが開かれていません")
 				return
 			}
-			vscode.window.showInformationMessage(new NakoCompiler().runReset(activeTextEditor.document.getText()).log)
+			const compiler = new NakoCompiler()
+			for (const plugin of plugins) {
+				compiler.addPlugin(plugin)
+			}
+			// 「表示」の動作を上書き
+			compiler.addPlugin({
+				'表示': {
+					type: 'func',
+					josi: [['を', 'と']],
+					fn: function (s: any, sys: any) {
+						const format = (obj: unknown): string => {
+							if (typeof obj === "string") {
+								return obj
+							}
+							try {
+								return JSON.stringify(obj)
+							} catch (e) {
+								return `${obj}`
+							}
+						}
+						vscode.window.showInformationMessage(format(s))
+						if (!sys.silent) { console.log(s) }
+						sys.__varslist[0]['表示ログ'] += (s + '\n')
+					},
+					return_none: true
+				},
+			})
+			try {
+				// NOTE: 「N秒後」とかを使っていると関数を抜けた後も実行され続ける
+				compiler.runReset(activeTextEditor.document.getText())
+			} catch (e) {
+				vscode.window.showErrorMessage(e.message)
+			}
+		}),
+		vscode.commands.registerCommand("nadesiko3.compileFile", () => {
+			activeTextEditor = vscode.window.activeTextEditor
+			if (activeTextEditor === undefined) {
+				vscode.window.showErrorMessage("ファイルが開かれていません")
+				return
+			}
+			const compiler = new NakoCompiler()
+			for (const plugin of plugins) {
+				compiler.addPlugin(plugin)
+			}
+			let content: string | null = null
+			try {
+				content = compiler.compile(activeTextEditor.document.getText(), activeTextEditor.document.fileName, false)
+			} catch (e) {
+				vscode.window.showErrorMessage(e.message)
+			}
+			if (content !== null) {
+				vscode.workspace.openTextDocument({ content, language: "javascript" })
+					.then((document) => {
+						vscode.window.showTextDocument(document)
+					})
+			}
 		}),
 	)
 }

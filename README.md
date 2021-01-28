@@ -1,6 +1,6 @@
 # vscode-nadesiko3 README
 
-なでしこ言語の拡張機能
+プログラミング言語なでしこの拡張機能
 
 ![screenshot](https://raw.githubusercontent.com/yy0931/vscode-nadesiko3/master/nako.png)
 
@@ -14,3 +14,7 @@
 未実装の機能:
 - [ ] インデント構文への対応
 - [ ] シンタックスエラーの表示
+
+## 使用方法
+拡張子が .nako のファイルがなでしこ言語のファイルとして認識されます。
+作成したプログラムを実行するにはVisual Studio Code の右上の ▷ ボタンを押してください。

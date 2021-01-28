@@ -1,6 +1,8 @@
-# nadesiko3-vscode README
+# vscode-nadesiko3 README
 
 なでしこ言語の拡張機能
+
+![screenshot](https://raw.githubusercontent.com/yy0931/vscode-nadesiko3/master/nako.png)
 
 ## Features
 

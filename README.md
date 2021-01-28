@@ -1,6 +1,6 @@
 # vscode-nadesiko3 README
 
-プログラミング言語なでしこの拡張機能
+プログラミング言語なでしこv3の拡張機能
 
 ![screenshot](https://raw.githubusercontent.com/yy0931/vscode-nadesiko3/master/nako.png)
 

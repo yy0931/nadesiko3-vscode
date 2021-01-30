@@ -47,9 +47,18 @@ describe("lex", () => {
         expect(a.tokens).to.deep.equal(a.tokens)
         expect(a.commentTokens).to.deep.equal(a.commentTokens)
     })
-})
+    it("template string", () => {
+        const a = lex(`あは20\n"{あ}"`)
+        if (a instanceof LexError) {
+            throw new Error("error")
+        }
+        expect(a.tokens[4]).to.include({ type: "string", startOffset: 5, endOffset: 7 })
+        expect(a.tokens[5]).to.include({ type: "&", startOffset: 7, endOffset: 7 })
+        expect(a.tokens[6]).to.include({ value: "あ", startOffset: 7, endOffset: 8 })
+        expect(a.tokens[7]).to.include({ type: "&", startOffset: 8, endOffset: 8 })
+        expect(a.tokens[8]).to.include({ type: "string", startOffset: 8, endOffset: 10 })
+    })
 
-describe("source mapping", () => {
     const sourceMap = (code: string) => {
         const preprocessed = prepare(code)
         const tokens = tokenize(preprocessed.map((v) => v.text).join(""), 0, "")
@@ -124,12 +133,5 @@ describe("source mapping", () => {
 
         // ソースマップを計算
         const result = addSourceMapToTokens(tokens, preprocessed, code)
-    })
-    it("template string", () => {
-        const a = lex(`あは20\n"{あ}"`)
-        if (a instanceof LexError) {
-            throw new Error("error")
-        }
-        console.log(a.tokens)
     })
 })

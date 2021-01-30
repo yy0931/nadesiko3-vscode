@@ -18,16 +18,23 @@ const header = `\
 『#nako3_div_1』へDOM親要素設定。
 `
 
+const printError = (/** @type {string} */ text) => {
+    messageElement.innerText = text + "\n"
+    messageContainer.scrollTo(0, messageContainer.scrollHeight)
+}
+
 const ws = new WebSocket(`ws://${location.host}`)
 ws.addEventListener("message", (ev) => {
     /** @type {import("../src/web_nako_server").Data} */
     const data = JSON.parse(ev.data)
     document.title = `なでしこv3: ${data.fileName}`
     nako3.runAsync(header + data.code, data.fileName)
+        .catch((err) => {
+            printError(err.message)
+        })
 })
 ws.addEventListener("close", () => {
-    messageElement.innerText = "VSCodeとの接続が切れました。VSCode上でプログラムを再実行してください。"
-    messageContainer.scrollTo(0, messageContainer.scrollHeight)
+    printError("VSCodeとの接続が切れました。VSCode上でプログラムを再実行してください。")
 })
 
 // @ts-ignore

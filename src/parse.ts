@@ -26,6 +26,25 @@ export const lex = (code: string): { commentTokens: TokenWithSourceMap[], tokens
             if (children instanceof LexError) {
                 return children
             }
+
+            // 文字列内位置からファイル内位置へ変換
+            const start = tokens[i].startOffset
+            if (start === null) {
+                for (const token of children) {
+                    token.startOffset = null
+                    token.endOffset = null
+                }
+            } else {
+                for (const token of children) {
+                    if (token.startOffset !== null) {
+                        token.startOffset += start
+                    }
+                    if (token.endOffset !== null) {
+                        token.endOffset += start
+                    }
+                }
+            }
+
             commentTokens.push(...children.filter((t) => t.type === "line_comment" || t.type === "range_comment"))
 
             convertToken(children, funclist, false)

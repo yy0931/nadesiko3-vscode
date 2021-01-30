@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>なでしこv3</title>
+		<link rel="stylesheet" href="/static/jquery-ui-1.12.1.custom/jquery-ui.min.css">
+		<link rel="stylesheet" href="/static/index.css">
+	</head>
+
+	<body>
+		<div class="container">
+			<div class="left" id="left">
+				<pre class="message_container"><span class="tag">コンパイラのメッセージ</span><hr><code id="message"></code></pre>
+				<pre class="output_container"><span class="tag">プログラムの出力</span><hr><code id="output"></code></pre>
+			</div>
+			<div class="right">
+				<div id="nako3_div_1"></div>
+				<canvas id="nako3_canvas_1" width="420" height="240"></div>
+			</div>
+		</div>
+		<script src="/node_modules/jquery/dist/jquery.min.js"></script>
+		<script src="/node_modules/mocha/mocha.js"></script>
+		<script src="/node_modules/nadesiko3/release/wnako3.js"></script>
+		<script src="/node_modules/nadesiko3/release/version.js"></script>
+		<script src="/node_modules/nadesiko3/release/plugin_markup.js"></script>
+		<script src="/node_modules/nadesiko3/release/plugin_csv.js"></script>
+		<script src="/node_modules/nadesiko3/release/plugin_kansuji.js"></script>
+		<script src="/node_modules/nadesiko3/release/plugin_datetime.js"></script>
+		<script src="/node_modules/nadesiko3/release/plugin_turtle.js"></script>
+		<script src="/node_modules/nadesiko3/release/plugin_caniuse.js"></script>
+		<script src="/node_modules/nadesiko3/release/plugin_webworker.js"></script>
+		<script defer src="/node_modules/chart.js/dist/Chart.min.js"></script>
+
+		<script src="/static/jquery-ui-1.12.1.custom/jquery-ui.min.js"></script>
+		<script src="/static/index.js"></script>
+	</body>
+
+</html>

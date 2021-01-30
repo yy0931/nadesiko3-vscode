@@ -125,4 +125,11 @@ describe("source mapping", () => {
         // ソースマップを計算
         const result = addSourceMapToTokens(tokens, preprocessed, code)
     })
+    it("template string", () => {
+        const a = lex(`あは20\n"{あ}"`)
+        if (a instanceof LexError) {
+            throw new Error("error")
+        }
+        console.log(a.tokens)
+    })
 })

@@ -24,7 +24,9 @@ export default function addSourceMapToTokens(tokens: Token[], preprocessed: { te
     return tokens.map((token, i) => {
         const startOffset = sourceMapping.map(token.preprocessedCodeOffset)
         let endOffset: number
-        if (tokens[i + 1] === undefined) {
+        if (token.preprocessedCodeLength !== undefined) {
+            endOffset = sourceMapping.map(token.preprocessedCodeOffset + token.preprocessedCodeLength)
+        } else if (tokens[i + 1] === undefined) {
             // ファイルの末尾まで
             endOffset = code.length
         } else {

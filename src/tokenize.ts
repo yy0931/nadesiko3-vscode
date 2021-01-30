@@ -12,9 +12,9 @@ export interface Token {
     file: string
     josi: string
     preprocessedCodeOffset: number  // プリプロセスされたコード上の位置
+    preprocessedCodeLength?: number  // 未設定の場合、次のトークンの先頭までの長さになる。助詞の存在しうるトークンの場合はundefinedにすべき。
     meta?: any
 }
-
 
 export class LexError extends Error {
     constructor(public readonly reason: string) {
@@ -69,15 +69,24 @@ export const tokenize = (src: string, line: number, filename: string): Token[] |
                     const list = rp.res.split(/[{}｛｝]/)
                     if (list.length >= 1 && list.length % 2 === 0) { return new LexError('字句解析エラー(' + (line + 1) + '): 展開あり文字列で値の埋め込み{...}が対応していません。') }
 
+                    let offset = 0
                     for (let i = 0; i < list.length; i++) {
                         const josi = (i === list.length - 1) ? rp.josi : ''
                         if (i % 2 === 0) {
-                            result.push({ type: 'string', value: list[i], file: filename, josi, line, column, preprocessedCodeOffset: srcLength - src.length })
+                            if (i === list.length - 1) { // 最後の要素は、助詞を含めるために、次のトークンまでとする。
+                                result.push({ type: 'string', value: list[i], file: filename, josi, line, column, preprocessedCodeOffset: srcLength - src.length + offset })
+                            } else {
+                                result.push({ type: 'string', value: list[i], file: filename, josi, line, column, preprocessedCodeOffset: srcLength - src.length + offset, preprocessedCodeLength: list[i].length + 2 })
+                                // 先頭なら'"...{'、それ以外なら'}...{'
+                                offset += list[i].length + 2
+                            }
                         } else {
+                            // list[i] = `{}`
                             list[i] = lexRules.trimOkurigana(list[i])
-                            result.push({ type: '&', value: '&', josi: '', file: filename, line, column, preprocessedCodeOffset: srcLength - src.length })
-                            result.push({ type: 'code', value: list[i], josi: '', file: filename, line, column, preprocessedCodeOffset: srcLength - src.length })
-                            result.push({ type: '&', value: '&', josi: '', file: filename, line, column, preprocessedCodeOffset: srcLength - src.length })
+                            result.push({ type: '&', value: '&', josi: '', file: filename, line, column, preprocessedCodeOffset: srcLength - src.length + offset, preprocessedCodeLength: 0 })
+                            result.push({ type: 'code', value: list[i], josi: '', file: filename, line, column, preprocessedCodeOffset: srcLength - src.length + offset, preprocessedCodeLength: list[i].length })
+                            result.push({ type: '&', value: '&', josi: '', file: filename, line, column, preprocessedCodeOffset: srcLength - src.length + offset, preprocessedCodeLength: 0 })
+                            offset += list[i].length
                         }
                     }
 

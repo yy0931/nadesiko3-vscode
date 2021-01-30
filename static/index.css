@@ -1,0 +1,81 @@
+* {
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+}
+
+html, body, .container, .left, .right {
+    height: 100%;
+}
+
+.container {
+    width: 100%;
+}
+
+.left {
+    float: left;
+    width: 40%;
+    min-width: 20%;
+    max-width: 80%;
+    height: 100%;
+    border-right: double 5px rgb(187, 187, 187);
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.right {
+    width: auto;
+    height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.message_container {
+    border-bottom: rgb(184, 184, 184) solid 1px;
+    padding: 5px;
+    width: 100%;
+    display: block;
+    height: 20%;
+    overflow: scroll;
+    margin: 0;
+    font-size: 1.4em;
+}
+
+.message_container code {
+    color: #ac2626;
+}
+
+.output_container {
+    border-bottom: rgb(184, 184, 184) solid 1px;
+    padding: 5px;
+    width: 100%;
+    display: block;
+    height: 70%;
+    overflow: scroll;
+    margin: 0;
+    font-size: 1.4em;
+}
+
+.output_container code {
+    color: rgb(7, 11, 26);
+}
+
+#nako3_canvas_1 {
+    border: rgb(184, 184, 184) solid 1px;
+}
+
+.container hr {
+    border-top: 1px solid rgb(184, 184, 184);
+    border-bottom: 0;
+    margin-bottom: 10px;
+}
+
+.container code {
+    margin-left: 10px;
+    display: block;
+}
+
+span.tag {
+    margin-left: 10px;
+    font-weight: 600;
+}

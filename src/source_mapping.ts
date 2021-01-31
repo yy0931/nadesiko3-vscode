@@ -1,15 +1,16 @@
 import { Token, TokenWithSourceMap } from "./tokenize"
 
 class SourceMapping {
-    private readonly preprocessed: { text: string; sourcePosition: number; preprocessedCodePosition: number }[]
+    // 高速化のための変数
+    private readonly cumulativeSum: number[]
     private lastIndex = 0
     private lastPreprocessedCodePosition = 0
 
-    constructor(private readonly sourceCodeLength: number, preprocessed: { text: string; sourcePosition: number; }[]) {
-        this.preprocessed = []
+    constructor(private readonly sourceCodeLength: number, private readonly preprocessed: { text: string; sourcePosition: number; }[]) {
         let i = 0
+        this.cumulativeSum = []
         for (const el of preprocessed) {
-            this.preprocessed.push({ ...el, preprocessedCodePosition: i })
+            this.cumulativeSum.push(i)
             i += el.text.length
         }
     }
@@ -23,19 +24,18 @@ class SourceMapping {
         this.lastPreprocessedCodePosition = preprocessedCodePosition
 
         for (let i = this.lastIndex; i < this.preprocessed.length - 1; i++) {
-            if (preprocessedCodePosition < this.preprocessed[i + 1].preprocessedCodePosition) {
+            if (preprocessedCodePosition < this.cumulativeSum[i + 1]) {
                 this.lastIndex = i
                 return Math.min(
-                    this.preprocessed[i].sourcePosition + (preprocessedCodePosition - this.preprocessed[i].preprocessedCodePosition),
+                    this.preprocessed[i].sourcePosition + (preprocessedCodePosition - this.cumulativeSum[i]),
                     this.preprocessed[i + 1].sourcePosition - 1,
                 )
             }
         }
 
         this.lastIndex = this.preprocessed.length - 1
-        const last = this.preprocessed[this.preprocessed.length - 1]
         return Math.min(
-            last.sourcePosition + (preprocessedCodePosition - last.preprocessedCodePosition),
+            this.preprocessed[this.preprocessed.length - 1].sourcePosition + (preprocessedCodePosition - this.cumulativeSum[this.preprocessed.length - 1]),
             this.sourceCodeLength,
         )
     }

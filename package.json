@@ -70,7 +70,22 @@
 				"title": "Compile Current File",
 				"category": "Nadesiko3"
 			}
-		]
+		],
+		"configuration": {
+			"title": "Nadesiko3",
+			"properties": {
+				"nadesiko3.showTokenDecorations": {
+					"type": "boolean",
+					"default": true,
+					"description": "トークンの区切り線を表示する"
+				},
+				"nadesiko3.showJosiDecorations": {
+					"type": "boolean",
+					"default": true,
+					"description": "助詞を強調表示する"
+				}
+			}
+		}
 	},
 	"scripts": {
 		"vscode:prepublish": "yarn run compile",

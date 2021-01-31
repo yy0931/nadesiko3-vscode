@@ -27,7 +27,7 @@ const codeLendsProvider: vscode.CodeLensProvider = {
 					title: "[ VSCode上で実行 ]",
 					command: "nadesiko3.runActiveFileOnVSCode",
 				},
-			)
+			),
 		];
 	}
 }

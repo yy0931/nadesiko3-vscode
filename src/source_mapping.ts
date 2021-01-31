@@ -23,20 +23,12 @@ export default function addSourceMapToTokens(tokens: Token[], preprocessed: { te
     const sourceMapping = new SourceMapping(code.length, preprocessed)
     return tokens.map((token, i) => {
         const startOffset = sourceMapping.map(token.preprocessedCodeOffset)
-        let endOffset: number
-        if (token.preprocessedCodeLength !== undefined) {
-            endOffset = sourceMapping.map(token.preprocessedCodeOffset + token.preprocessedCodeLength)
-        } else if (tokens[i + 1] === undefined) {
-            // ファイルの末尾まで
-            endOffset = code.length
-        } else {
-            // 次のトークンの先頭まで
-            endOffset = sourceMapping.map(tokens[i + 1].preprocessedCodeOffset)
-        }
+        const endOffset = sourceMapping.map(token.preprocessedCodeOffset + token.preprocessedCodeLength)
         return {
             ...token,
             startOffset,
             endOffset,
+            rawJosi: token.josi,
         } as TokenWithSourceMap
     })
 }

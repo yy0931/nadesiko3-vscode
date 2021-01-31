@@ -49,7 +49,7 @@ const HYPHENS: Record<string, boolean> = { // ハイフン問題
     0x2015: true, // 全角のダッシュ
     0x2212: true // 全角のマイナス
 }
-const TILDES: Record<string, boolean> = { // チルダ問題
+export const TILDES: Record<string, boolean> = { // チルダ問題
     0x7e: true,
     0x02dc: true, // 小さなチルダ
     0x02F7: true, // Modifier Letter Low Tilde

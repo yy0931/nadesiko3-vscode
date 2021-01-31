@@ -8,7 +8,12 @@ const tokenDecorationType = vscode.window.createTextEditorDecorationType({
         contentText: '|',
         color: 'transparent',
         width: '1px',
+        textDecoration: "underline",
     },
+})
+
+const josiDecorationType = vscode.window.createTextEditorDecorationType({
+    textDecoration: "underline",
 })
 
 export default function updateDecorations(editor: vscode.TextEditor) {
@@ -24,9 +29,11 @@ export default function updateDecorations(editor: vscode.TextEditor) {
         return
     }
 
-    // 全角半角の統一処理
-    const decorations = new Array<vscode.DecorationOptions>()
+    // トークンの区切れ目を表示する
+    const tokenDecorations = new Array<vscode.DecorationOptions>()
+    let prevDecorationPos = new vscode.Position(0, 0)
     for (const token of [...tokens.commentTokens, ...tokens.tokens]) {
+        // ソースコード上に存在しないトークンなら無視
         if (token.startOffset === null || token.endOffset === null) {
             continue
         }
@@ -39,6 +46,7 @@ export default function updateDecorations(editor: vscode.TextEditor) {
             continue
         }
 
+        // hoverMessage を作る
         let hoverMessage = new vscode.MarkdownString("")
         if (token.type === "func" && (token.value as string) in tokens.funclist && tokens.funclist[token.value as string].type === "func") {
             const phrase = (tokens.funclist[token.value as string].josi as string[][])
@@ -48,11 +56,44 @@ export default function updateDecorations(editor: vscode.TextEditor) {
         } else {
             hoverMessage = hoverMessage.appendText(`${text}` + (text !== token.type ? `: ${token.type}` : ``) + (text !== token.value ? `\n${token.value}` : ``))
         }
-        decorations.push({
+
+        // border-left
+        if (!prevDecorationPos.isEqual(start)) {
+            tokenDecorations.push({
+                range: new vscode.Range(start, start),
+            })
+        }
+
+        // border-right
+        tokenDecorations.push({
             range: new vscode.Range(start, end),
             hoverMessage
         })
+        prevDecorationPos = end
+    }
+    editor.setDecorations(tokenDecorationType, tokenDecorations)
+
+    // 助詞を強調する
+    const josiDecorations = new Array<vscode.DecorationOptions>()
+    for (const token of tokens.tokens) {
+        if (token.endOffset === null || token.rawJosi === "" || token.josi === "") {
+            continue
+        }
+        const start = editor.document.positionAt(token.endOffset - token.rawJosi.length)
+        const end = editor.document.positionAt(token.endOffset)
+        const text = code.slice(token.endOffset - token.rawJosi.length, token.endOffset)
+
+        // NOTE: 助詞「は~」の場合は「~」の部分が「〜」などにマッチするが、それらは全て1文字なため、
+        //       特別な処理は不要なはず
+        if (text !== token.rawJosi && token.rawJosi !== "は~") {
+            console.log(`error: ${text} !== ${token.rawJosi}`)
+            continue
+        }
+
+        josiDecorations.push({
+            range: new vscode.Range(start, end),
+        })
     }
 
-    editor.setDecorations(tokenDecorationType, decorations)
+    editor.setDecorations(josiDecorationType, josiDecorations)
 }

@@ -12,7 +12,7 @@ export interface Token {
     file: string
     josi: string
     preprocessedCodeOffset: number  // プリプロセスされたコード上の位置
-    preprocessedCodeLength?: number  // 未設定の場合、次のトークンの先頭までの長さになる。助詞の存在しうるトークンの場合はundefinedにすべき。
+    preprocessedCodeLength: number
     meta?: any
 }
 
@@ -73,13 +73,9 @@ export const tokenize = (src: string, line: number, filename: string): Token[] |
                     for (let i = 0; i < list.length; i++) {
                         const josi = (i === list.length - 1) ? rp.josi : ''
                         if (i % 2 === 0) {
-                            if (i === list.length - 1) { // 最後の要素は、助詞を含めるために、次のトークンまでとする。
-                                result.push({ type: 'string', value: list[i], file: filename, josi, line, column, preprocessedCodeOffset: srcLength - src.length + offset })
-                            } else {
-                                result.push({ type: 'string', value: list[i], file: filename, josi, line, column, preprocessedCodeOffset: srcLength - src.length + offset, preprocessedCodeLength: list[i].length + 2 })
-                                // 先頭なら'"...{'、それ以外なら'}...{'
-                                offset += list[i].length + 2
-                            }
+                            result.push({ type: 'string', value: list[i], file: filename, josi, line, column, preprocessedCodeOffset: srcLength - src.length + offset, preprocessedCodeLength: list[i].length + 2 + josi.length })
+                            // 先頭なら'"...{'、それ以外なら'}...{'、最後は何でも良い
+                            offset += list[i].length + 2
                         } else {
                             // list[i] = `{}`
                             list[i] = lexRules.trimOkurigana(list[i])
@@ -101,7 +97,7 @@ export const tokenize = (src: string, line: number, filename: string): Token[] |
 
                 columnCurrent = column
                 column += src.length - rp.src.length
-                result.push({ type: rule.name, value: rp.res, josi: rp.josi, line: line, column: columnCurrent, file: filename, preprocessedCodeOffset: srcLength - src.length })
+                result.push({ type: rule.name, value: rp.res, josi: rp.josi, line: line, column: columnCurrent, file: filename, preprocessedCodeOffset: srcLength - src.length, preprocessedCodeLength: src.length - rp.src.length })
                 src = rp.src
                 line += rp.numEOL
                 if (rp.numEOL > 0) {
@@ -163,6 +159,7 @@ export const tokenize = (src: string, line: number, filename: string): Token[] |
                 file: filename,
                 josi: josi,
                 preprocessedCodeOffset: srcOffset,
+                preprocessedCodeLength: (srcLength - src.length) - srcOffset,
             })
             break
         }
@@ -171,7 +168,7 @@ export const tokenize = (src: string, line: number, filename: string): Token[] |
     return result
 }
 
-export type TokenWithSourceMap = Omit<Token, "preprocessedCodeOffset"> & { startOffset: number | null, endOffset: number | null }
+export type TokenWithSourceMap = Omit<Token, "preprocessedCodeOffset" | "preprocessedCodeLength"> & { rawJosi: string, startOffset: number | null, endOffset: number | null }
 
 // NakoCompiler.rawtokenize
 let previousParsingResult: { code: string, result: ReturnType<typeof rawTokenize> } | null = null
@@ -195,5 +192,6 @@ export const rawTokenize = (code: string): TokenWithSourceMap[] | LexError => {
     previousParsingResult = {
         code, result: [...result.map((v) => ({ ...v }))]
     }
+
     return result
 }

@@ -1,4 +1,4 @@
-import { LexError, tokenize } from "./tokenize"
+import { LexError, rawTokenize, tokenize } from "./tokenize"
 import { expect } from "chai"
 import prepare from "./prepare"
 import addSourceMapToTokens from "./source_mapping"
@@ -36,6 +36,12 @@ describe("lex", () => {
         const result = lex(`もし、Aが５ならば`) as any
         expect(result.tokens[2]).to.deep.include({ value: 5, startOffset: 5, endOffset: 6 })
         expect(result.tokens[3]).to.deep.include({ value: 'ならば', startOffset: 6, endOffset: 9 })
+    })
+    it("読点", () => {
+        //@ts-ignore
+        const result = lex("ならば、A") as any
+        expect(result.tokens[0]).to.deep.include({ value: "ならば", startOffset: 0, endOffset: 3 })
+        expect(result.tokens[1]).to.deep.include({ value: "A", startOffset: 4, endOffset: 5 })
     })
     it("複数回呼び出し", () => {
         // キャッシュでバグったためテスト
@@ -76,6 +82,7 @@ describe("lex", () => {
         ])
     })
     it("句点あり", () => {
+        // @ts-ignore
         expect(sourceMap(`「こんにちは」と表示する。`)).to.deep.equal([
             { value: 'こんにちは', start: 0, end: 8 },
             { value: '表示', start: 8, end: 12 },

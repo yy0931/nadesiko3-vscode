@@ -8,13 +8,14 @@ type FuncList = Record<string, Record<string, unknown>>
 
 // NakoCompiler.parse の前半
 export const lex = (code: string): { commentTokens: TokenWithSourceMap[], tokens: TokenWithSourceMap[], funclist: FuncList } | LexError => {
-    const tokens = rawTokenize(code)
+    let tokens = rawTokenize(code)
     if (tokens instanceof LexError) {
         return tokens
     }
 
     // convertTokenで消されるコメントのトークンを残す
     const commentTokens: TokenWithSourceMap[] = tokens.filter((t) => t.type === "line_comment" || t.type === "range_comment")
+        .map((v) => ({ ...v }))  // clone
 
     const funclist = getBuiltinFuncList() as FuncList
     convertToken(tokens, funclist, true)
@@ -80,8 +81,8 @@ export const convertToken = (tokens: TokenWithSourceMap[], funclist: FuncList, i
     if (isFirst) {
         const eofLine = (tokens.length > 0) ? tokens[tokens.length - 1].line : 0
         const filename = (tokens.length > 0) ? tokens[tokens.length - 1].file : ''
-        tokens.push({ type: 'eol', line: eofLine, column: 0, file: filename, josi: '', value: '---', endOffset: null, startOffset: null }) // 改行
-        tokens.push({ type: 'eof', line: eofLine, column: 0, file: filename, josi: '', value: '', endOffset: null, startOffset: null }) // ファイル末尾
+        tokens.push({ type: 'eol', line: eofLine, column: 0, file: filename, josi: '', value: '---', endOffset: null, startOffset: null, rawJosi: "" }) // 改行
+        tokens.push({ type: 'eof', line: eofLine, column: 0, file: filename, josi: '', value: '', endOffset: null, startOffset: null, rawJosi: "" }) // ファイル末尾
     }
 }
 
@@ -135,7 +136,7 @@ const preDefineFunc = (tokens: TokenWithSourceMap[], funclist: FuncList): void =
         // 無名関数の定義：「xxには**」があった場合 ... 暗黙的な関数定義とする
         if ((t.type === 'word' && t.josi === 'には') || (t.type === 'word' && t.josi === 'は~')) {
             t.josi = 'には'
-            tokens.splice(i + 1, 0, { type: 'def_func', value: '関数', line: t.line, column: t.column, file: t.file, josi: '', startOffset: t.endOffset, endOffset: t.endOffset })
+            tokens.splice(i + 1, 0, { type: 'def_func', value: '関数', line: t.line, column: t.column, file: t.file, josi: '', startOffset: t.endOffset, endOffset: t.endOffset, rawJosi: "" })
             i++
             continue
         }
@@ -143,7 +144,7 @@ const preDefineFunc = (tokens: TokenWithSourceMap[], funclist: FuncList): void =
         if (t.type === 'word' && t.josi === '' && (t.value as string).length >= 2) {
             if ((t.value as string).match(/回$/)) {
                 t.value = (t.value as string).substr(0, (t.value as string).length - 1)
-                tokens.splice(i + 1, 0, { type: '回', value: '回', line: t.line, column: t.column, file: t.file, josi: '', startOffset: t.endOffset! - 1, endOffset: t.endOffset })
+                tokens.splice(i + 1, 0, { type: '回', value: '回', line: t.line, column: t.column, file: t.file, josi: '', startOffset: t.endOffset! - 1, endOffset: t.endOffset, rawJosi: "" })
                 t.endOffset! -= 1
                 i++
             }
@@ -225,7 +226,7 @@ const replaceWord = (tokens: TokenWithSourceMap[], funclist: FuncList) => {
         // 助詞の「は」を = に展開
         if (t.josi === undefined) { t.josi = '' }
         if (t.josi === 'は') {
-            tokens.splice(i + 1, 0, { type: 'eq', line: t.line, column: t.column, file: t.file, value: '', josi: '', startOffset: t.endOffset! - 'は'.length, endOffset: t.endOffset })
+            tokens.splice(i + 1, 0, { type: 'eq', line: t.line, column: t.column, file: t.file, value: '', josi: '', startOffset: t.endOffset! - 'は'.length, endOffset: t.endOffset, rawJosi: "" })
             i += 2
             t.josi = ''
             t.endOffset! -= 'は'.length
@@ -233,7 +234,7 @@ const replaceWord = (tokens: TokenWithSourceMap[], funclist: FuncList) => {
         }
         // 「とは」を一つの単語にする
         if (t.josi === 'とは') {
-            tokens.splice(i + 1, 0, { type: t.josi, line: t.line, column: t.column, file: t.file, value: '', josi: '', startOffset: t.endOffset! - 'とは'.length, endOffset: t.endOffset })
+            tokens.splice(i + 1, 0, { type: t.josi, line: t.line, column: t.column, file: t.file, value: '', josi: '', startOffset: t.endOffset! - 'とは'.length, endOffset: t.endOffset, rawJosi: "" })
             t.josi = ''
             i += 2
             t.endOffset! -= 'とは'.length
@@ -243,8 +244,8 @@ const replaceWord = (tokens: TokenWithSourceMap[], funclist: FuncList) => {
         if (josi.tarareba[t.josi]) {
             const josi = (t.josi !== 'でなければ') ? 'ならば' : 'でなければ'
             t.josi = ''
-            tokens.splice(i + 1, 0, { type: 'ならば', value: josi, line: t.line, column: t.column, file: t.file, josi: '', startOffset: t.endOffset! - josi.length, endOffset: t.endOffset })
-            t.endOffset! -= josi.length
+            tokens.splice(i + 1, 0, { type: 'ならば', value: josi, line: t.line, column: t.column, file: t.file, josi: '', startOffset: t.endOffset! - t.rawJosi.length, endOffset: t.endOffset, rawJosi: "" })
+            t.endOffset! -= t.rawJosi.length
             i += 2
             continue
         }

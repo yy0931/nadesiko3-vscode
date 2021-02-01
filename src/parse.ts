@@ -1,15 +1,17 @@
 import * as nakoParserConst from "nadesiko3/src/nako_parser_const"
-import { rawTokenize, tokenize, Token, LexError, TokenWithSourceMap } from "./tokenize"
+import { rawTokenize, tokenize, Token, LexError, TokenWithSourceMap, LexErrorWithSourceMap } from "./tokenize"
 import reservedWords = require("nadesiko3/src/nako_reserved_words")
 import { tarareba } from "nadesiko3/src/nako_josi_list"
 import { mockPlugins, asFuncList, Plugin } from "./nako3_plugins"
+import NakoParser = require('nadesiko3/src/nako_parser3')
+import NakoSyntaxError = require("nadesiko3/src/nako_syntax_error")
 
 type FuncList = Record<string, any>
 
 // NakoCompiler.parse の前半
-export const lex = (code: string): { commentTokens: TokenWithSourceMap[], tokens: TokenWithSourceMap[], funclist: FuncList } | LexError => {
+export const lex = (code: string): { commentTokens: TokenWithSourceMap[], tokens: TokenWithSourceMap[], funclist: FuncList } | LexErrorWithSourceMap => {
     let tokens = rawTokenize(code)
-    if (tokens instanceof LexError) {
+    if (tokens instanceof LexErrorWithSourceMap) {
         return tokens
     }
 
@@ -58,18 +60,78 @@ export const lex = (code: string): { commentTokens: TokenWithSourceMap[], tokens
     return { commentTokens, tokens, funclist }
 }
 
-// // NakoCompiler.parse
-// const parse = (code: string) => {
-//     const lexerOutput = lex(code)
-//     if (lexerOutput instanceof LexError) {
-//         return lexerOutput
-//     }
+export class ParseError extends Error {
+    constructor(
+        public readonly token: TokenWithSourceMap,
+        public readonly startOffset: number,
+        public readonly endOffset: number,
+        public readonly message: string,
+    ) {
+        super(message)
+    }
+}
 
-//     // 構文木を作成
-//     const ast = parser.parse(lexerOutput.tokens)
-//     this.usedFuncs = this.getUsedFuncs(ast)
-//     return ast
-// }
+// NakoCompiler.parse
+export const parse = (code: string): { ok: unknown } | { err: LexErrorWithSourceMap | ParseError } => {
+    const lexerOutput = lex(code)
+    if (lexerOutput instanceof LexErrorWithSourceMap) {
+        return { err: lexerOutput }
+    }
+    const parser = new NakoParser()
+    try {
+        return { ok: parser.parse(lexerOutput.tokens) }
+    } catch (e) {
+        // エラーの発生したトークン
+        const token = lexerOutput.tokens[parser.index]
+        let startOffset = token.startOffset
+        let endOffset = token.endOffset
+
+        // ソースコード上の位置が見つかるまで、左右のトークンを見ていく
+        let left = parser.index
+        while (startOffset === null) {
+            left--
+            if (left <= -1) {
+                startOffset = 0
+            } else if (lexerOutput.tokens[left].endOffset !== null) {
+                startOffset = lexerOutput.tokens[left].endOffset
+            } else if (lexerOutput.tokens[left].startOffset !== null) {
+                startOffset = lexerOutput.tokens[left].startOffset
+            }
+        }
+
+        let right = parser.index
+        while (endOffset === null) {
+            right++
+            if (right >= lexerOutput.tokens.length) {
+                endOffset = code.length
+            } else if (lexerOutput.tokens[right].startOffset !== null) {
+                endOffset = lexerOutput.tokens[right].startOffset
+            } else if (lexerOutput.tokens[right].endOffset !== null) {
+                endOffset = lexerOutput.tokens[right].endOffset
+            }
+        }
+
+        // start < end であるべきなため、もし等しければどちらかを1つ動かす
+        if (startOffset === endOffset) {
+            if (startOffset <= 0) {
+                endOffset++  // endOffset = 1
+            } else {
+                startOffset--
+            }
+        }
+
+        // エラーを返す
+        if (e instanceof NakoSyntaxError) {
+            const matches = /^\[文法エラー\](.*)\((.*)行目\): (.*)\n\[バージョン\] (.*)$/.exec(e.message)
+            if (matches === null) {
+                throw new Error(`NakoSyntaxError.message のパースに失敗: ${JSON.stringify(e.message)}`)
+            }
+            return { err: new ParseError(token, startOffset, endOffset, matches[3]) }
+        } else {
+            return { err: new ParseError(token, startOffset, endOffset, e.message) }
+        }
+    }
+}
 
 // NakoCompiler.convertToken
 export const convertToken = (tokens: TokenWithSourceMap[], funclist: FuncList, isFirst = true): void => {

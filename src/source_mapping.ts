@@ -2,7 +2,7 @@ import { assert } from "chai"
 import { Token, TokenWithSourceMap } from "./tokenize"
 
 /** prepareとtokenizeのソースマッピング */
-class SourceMappingOfTokenization {
+export class SourceMappingOfTokenization {
     private readonly cumulativeSum: number[]
     constructor(private readonly sourceCodeLength: number, private readonly preprocessed: { text: string; sourcePosition: number; }[]) {
         let i = 0
@@ -43,7 +43,7 @@ class SourceMappingOfTokenization {
     }
 }
 
-class SourceMappingOfIndexSyntax {
+export class SourceMappingOfIndexSyntax {
     private lines: { offset: number, len: number }[] = []
 
     constructor(
@@ -58,19 +58,19 @@ class SourceMappingOfIndexSyntax {
         }
     }
 
-    public apply(token: TokenWithSourceMap) {
-        if (token.startOffset === null) {
-            return token
+    public map(startOffset: number | null, endOffset: number | null): { startOffset: number | null, endOffset: number | null } {
+        if (startOffset === null) {
+            return { startOffset, endOffset }
         }
 
         // 何行目かを判定
-        const tokenLine = this.getLineNumber(token.startOffset)
+        const tokenLine = this.getLineNumber(startOffset)
 
         for (const insertedLine of this.linesInsertedByIndentationSyntax) {
             // インデント構文の処理後のソースコードの `insertedLine` 行目にあるトークンのソースマップ情報を削除する。
             if (tokenLine === insertedLine) {
-                token.startOffset = null
-                token.endOffset = null
+                startOffset = null
+                endOffset = null
                 break
             }
 
@@ -78,23 +78,25 @@ class SourceMappingOfIndexSyntax {
             // `linesInsertedByIndentationSyntax[i]` 行目の文字数（\rを含む） を引く。
             if (tokenLine > insertedLine) {
                 // "\n"の分1足す
-                token.startOffset -= this.lines[insertedLine].len + 1
-                if (token.endOffset !== null) {
-                    token.endOffset -= this.lines[insertedLine].len + 1
+                startOffset -= this.lines[insertedLine].len + 1
+                if (endOffset !== null) {
+                    endOffset -= this.lines[insertedLine].len + 1
                 }
             }
         }
         for (const deletedLine of this.linesDeletedByIndentationSyntax) {
             if (tokenLine >= deletedLine.lineNumber) {
                 // "\n"の分1足す
-                if (token.startOffset !== null) {
-                    token.startOffset += deletedLine.len + 1
+                if (startOffset !== null) {
+                    startOffset += deletedLine.len + 1
                 }
-                if (token.endOffset !== null) {
-                    token.endOffset += deletedLine.len + 1
+                if (endOffset !== null) {
+                    endOffset += deletedLine.len + 1
                 }
             }
         }
+
+        return { startOffset, endOffset }
     }
 
     private lastLineNumber = 0
@@ -116,35 +118,4 @@ class SourceMappingOfIndexSyntax {
         this.lastLineNumber = this.lines.length - 1
         return this.lines.length - 1
     }
-}
-
-export default function addSourceMapToTokens(
-    tokens: Token[],
-    preprocessed: { text: string, sourcePosition: number }[],
-    codeAfterProcessingIndentationSyntax: string,
-    linesInsertedByIndentationSyntax: readonly number[],
-    linesDeletedByIndentationSyntax: readonly { lineNumber: number, len: number }[],
-): TokenWithSourceMap[] {
-    const tokenizationSourceMapping = new SourceMappingOfTokenization(codeAfterProcessingIndentationSyntax.length, preprocessed)
-
-    // インデント構文の処理後のソースコード上の位置を求める
-    const tokensWithSourceMap = tokens.map((token, i) => {
-        const startOffset = tokenizationSourceMapping.map(token.preprocessedCodeOffset)
-        const endOffset = tokenizationSourceMapping.map(token.preprocessedCodeOffset + token.preprocessedCodeLength)
-
-        return {
-            ...token,
-            startOffset,
-            endOffset,
-            rawJosi: token.josi,
-        } as TokenWithSourceMap
-    })
-
-    // インデント構文の処理前のソースコード上の位置へ変換する
-    const indentationSyntaxSourceMapping = new SourceMappingOfIndexSyntax(codeAfterProcessingIndentationSyntax, linesInsertedByIndentationSyntax, linesDeletedByIndentationSyntax)
-    for (const token of tokensWithSourceMap) {
-        indentationSyntaxSourceMapping.apply(token)
-    }
-
-    return tokensWithSourceMap
 }

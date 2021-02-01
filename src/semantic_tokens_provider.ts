@@ -43,7 +43,7 @@ export const semanticTokensProvider: vscode.DocumentSemanticTokensProvider = {
         }
 
         for (const token of [...tokens.commentTokens, ...tokens.tokens]) {
-            if (token.startOffset === null || token.endOffset === null) {
+            if (token.startOffset === null || token.endOffset === null || token.type === "eol" || token.type === "eof") {
                 continue
             }
             const start = document.positionAt(token.startOffset)

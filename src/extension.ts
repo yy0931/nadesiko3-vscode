@@ -7,6 +7,8 @@ import { mockPlugins } from "./nako3_plugins"
 
 import pluginNode = require("nadesiko3/src/plugin_node")
 import pluginCSV = require("nadesiko3/src/plugin_csv")
+import { parse } from './parse'
+import { LexErrorWithSourceMap } from './tokenize'
 
 const codeLendsProvider: vscode.CodeLensProvider = {
 	provideCodeLenses(
@@ -35,6 +37,58 @@ const codeLendsProvider: vscode.CodeLensProvider = {
 	}
 }
 
+
+const updateDiagnostics = (editor: vscode.TextEditor, diagnosticCollection: vscode.DiagnosticCollection) => {
+	if (editor.document.languageId !== "nadesiko3") {
+		diagnosticCollection.delete(editor.document.uri)
+		return
+	}
+	const code = editor.document.getText()
+	const parserOutput = parse(code)
+	if ("ok" in parserOutput) {
+		diagnosticCollection.delete(editor.document.uri)
+		return
+	}
+	if (parserOutput.err instanceof LexErrorWithSourceMap) {
+		diagnosticCollection.set(editor.document.uri, [new vscode.Diagnostic(
+			new vscode.Range(
+				editor.document.positionAt(parserOutput.err.startOffset || 0),
+				editor.document.positionAt(parserOutput.err.endOffset === null ? code.length : parserOutput.err.endOffset),
+			),
+			parserOutput.err.message,
+			vscode.DiagnosticSeverity.Error,
+		)])
+	} else { // ParseError
+		let { startOffset, endOffset } = parserOutput.err
+
+		// 空白文字だとdiagnosticsのホバーを表示できないため、一方を動かす。
+		while (/^\s*$/.test(code.slice(startOffset, endOffset))) {
+			if (startOffset > 0) {
+				startOffset--
+			} else if (endOffset < code.length) {
+				endOffset++
+			} else {
+				break
+			}
+		}
+
+		const start = editor.document.positionAt(startOffset)
+		const end = editor.document.positionAt(endOffset)
+
+		const message = `${parserOutput.err.token.type}: ${parserOutput.err.message}`
+
+		const severity = vscode.DiagnosticSeverity.Error
+		if (parserOutput.err.token.type === "eol") {
+			diagnosticCollection.set(editor.document.uri, [new vscode.Diagnostic(editor.document.lineAt(start).range, message, severity)])
+		} else if (parserOutput.err.token.type === "eof") {
+			// TODO: 最終行じゃなくて、スタックの積み始めの位置を表示したい。
+			diagnosticCollection.set(editor.document.uri, [new vscode.Diagnostic(editor.document.lineAt(start).range, message, severity)])
+		} else {
+			diagnosticCollection.set(editor.document.uri, [new vscode.Diagnostic(new vscode.Range(start, end), message, severity)])
+		}
+	}
+}
+
 export function activate(context: vscode.ExtensionContext) {
 	let activeTextEditor = vscode.window.activeTextEditor
 	if (activeTextEditor !== undefined) {
@@ -42,16 +96,20 @@ export function activate(context: vscode.ExtensionContext) {
 	}
 	const webNakoServer = new WebNakoServer()
 	const selector = { language: "nadesiko3" }
+	const diagnosticCollection = vscode.languages.createDiagnosticCollection("nadesiko3")
+
 	context.subscriptions.push(
 		webNakoServer,
+		diagnosticCollection,
 		vscode.languages.registerCodeLensProvider(selector, codeLendsProvider),
 		vscode.languages.registerDocumentSemanticTokensProvider(selector, semanticTokensProvider, legend),
 		vscode.window.onDidChangeActiveTextEditor((editor) => {
-			if (editor === undefined) {
+			activeTextEditor = editor
+			if (activeTextEditor === undefined) {
 				return
 			}
-			activeTextEditor = editor
-			updateDecorations(editor)
+			updateDecorations(activeTextEditor)
+			updateDiagnostics(activeTextEditor, diagnosticCollection)
 		}),
 		vscode.workspace.onDidChangeTextDocument((event) => {
 			activeTextEditor = vscode.window.activeTextEditor
@@ -59,6 +117,7 @@ export function activate(context: vscode.ExtensionContext) {
 				return
 			}
 			updateDecorations(activeTextEditor)
+			updateDiagnostics(activeTextEditor, diagnosticCollection)
 		}),
 		vscode.workspace.onDidOpenTextDocument((document) => {
 			activeTextEditor = vscode.window.activeTextEditor
@@ -66,9 +125,11 @@ export function activate(context: vscode.ExtensionContext) {
 				return
 			}
 			updateDecorations(activeTextEditor)
+			updateDiagnostics(activeTextEditor, diagnosticCollection)
 		}),
 		vscode.workspace.onDidCloseTextDocument((doc) => {
 			activeTextEditor = undefined
+			diagnosticCollection.delete(doc.uri)
 		}),
 		vscode.commands.registerCommand("nadesiko3.runActiveFileOnVSCode", () => {
 			activeTextEditor = vscode.window.activeTextEditor

@@ -118,7 +118,33 @@ declare module "nadesiko3/src/plugin_node" {
     const a: any
     export = a
 }
+
 declare module "nadesiko3/src/plugin_csv" {
     const a: any
     export = a
+}
+
+declare module "nadesiko3/src/nako_parser_base" {
+    export class NakoParserBase {
+        index: number
+        constructor()
+    }
+}
+
+declare module "nadesiko3/src/nako_parser3" {
+    import { NakoParserBase } from "nadesiko3/src/nako_parser_base"
+
+    class NakoParser extends NakoParserBase {
+        parse(tokens: any): any
+    }
+    export = NakoParser
+}
+
+
+
+declare module "nadesiko3/src/nako_syntax_error" {
+    class NakoSyntaxError extends Error {
+        constructor(msg: string, line: number, fname: string)
+    }
+    export = NakoSyntaxError
 }

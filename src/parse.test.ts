@@ -1,26 +1,18 @@
 import { LexError, rawTokenize, tokenize } from "./tokenize"
 import { expect } from "chai"
 import prepare from "./prepare"
-import { lex } from "./parse"
+import { lex, parse } from "./parse"
 import * as indent from "./indent"
 
-const mustRawTokenize = (code: string) => {
-    const result = rawTokenize(code)
-    if (result instanceof LexError) {
-        throw result
-    }
-    return result
-}
-
-const mustLex = (code: string) => {
-    const result = lex(code)
-    if (result instanceof LexError) {
-        throw result
-    }
-    return result
-}
-
 describe("rawTokenize", () => {
+    const mustRawTokenize = (code: string) => {
+        const result = rawTokenize(code)
+        if (result instanceof LexError) {
+            throw result
+        }
+        return result
+    }
+
     it("prepare", () => {
         expect(prepare("リンゴの値段は30")).to.deep.equal([
             { text: '_', sourcePosition: 0 },
@@ -41,7 +33,7 @@ describe("rawTokenize", () => {
         ])
     })
     it("tokenize", () => {
-        const tokens = tokenize("「こんにちは」と表示", 0, "")
+        const tokens = tokenize("「こんにちは」を表示", 0, "")
         if (tokens instanceof LexError) {
             throw new Error("error")
         }
@@ -54,18 +46,18 @@ describe("rawTokenize", () => {
         expect(result[1]).to.deep.include({ value: "A", startOffset: 4, endOffset: 5 })
     })
     it("句点無し", () => {
-        const result = mustRawTokenize(`「こんにちは」と表示する`)
+        const result = mustRawTokenize(`「こんにちは」を表示する`)
         expect(result[0]).to.deep.include({ value: 'こんにちは', startOffset: 0, endOffset: 8 })
         expect(result[1]).to.deep.include({ value: '表示', startOffset: 8, endOffset: 12 })
     })
     it("句点あり", () => {
-        const result = mustRawTokenize(`「こんにちは」と表示する。`)
+        const result = mustRawTokenize(`「こんにちは」を表示する。`)
         expect(result[0]).to.deep.include({ value: 'こんにちは', startOffset: 0, endOffset: 8 })
         expect(result[1]).to.deep.include({ value: '表示', startOffset: 8, endOffset: 12 })
         expect(result[2]).to.deep.include({ value: ';', startOffset: 12, endOffset: 13 })
     })
     it("複数行", () => {
-        const result = mustRawTokenize(`「こんにちは」と表示する。「こんにちは」と表示する。`)
+        const result = mustRawTokenize(`「こんにちは」を表示する。「こんにちは」を表示する。`)
         expect(result[0]).to.deep.include({ value: 'こんにちは', startOffset: 0, endOffset: 8 })
         expect(result[1]).to.deep.include({ value: '表示', startOffset: 8, endOffset: 12 })
         expect(result[2]).to.deep.include({ value: ';', startOffset: 12, endOffset: 13 })
@@ -117,6 +109,14 @@ describe("rawTokenize", () => {
 })
 
 describe("lex", () => {
+    const mustLex = (code: string) => {
+        const result = lex(code)
+        if (result instanceof LexError) {
+            throw result
+        }
+        return result
+    }
+
     it("複数回呼び出し", () => {
         const a = mustLex("# ああ")
         const b = mustLex("# ああ")
@@ -135,5 +135,43 @@ describe("lex", () => {
         expect(a[6]).to.include({ value: "あ", startOffset: 7, endOffset: 8 })
         expect(a[7]).to.include({ type: "&", startOffset: 8, endOffset: 8 })
         expect(a[8]).to.include({ type: "string", startOffset: 8, endOffset: 10 })
+    })
+})
+
+describe("parse", () => {
+    const mustParse = (code: string) => {
+        const result = parse(code)
+        if ("err" in result) {
+            throw result
+        }
+        return result.ok
+    }
+
+    const mustNotParse = (code: string) => {
+        const result = parse(code)
+        if ("ok" in result) {
+            throw new Error()
+        }
+        if (result.err instanceof LexError) {
+            throw result.err
+        }
+        return result.err
+    }
+
+    it("should parse", () => {
+        mustParse("「こんにちは」を表示")
+    })
+    it("should not parse", () => {
+        expect(mustNotParse("「こんにちは」」を表示").token.value).to.equal("」")
+    })
+    it("エラー位置の取得 （行の中間の場合）", () => {
+        const err = mustNotParse("「こんにちは」」と表示する")
+        expect(err.startOffset).equal(7)
+        expect(err.endOffset).equal(8)
+    })
+    it("エラー位置の取得 （行末の場合）", () => {
+        const err = mustNotParse("「こんにちは」と表示する")
+        expect(err.startOffset).equal(11)
+        expect(err.endOffset).equal(12)
     })
 })

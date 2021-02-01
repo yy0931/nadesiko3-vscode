@@ -20,14 +20,14 @@ const codeLendsProvider: vscode.CodeLensProvider = {
 			new vscode.CodeLens(
 				new vscode.Range(0, 0, 0, 0),
 				{
-					title: "[ ブラウザで実行 ]",
+					title: "$(play) ブラウザで実行",
 					command: "nadesiko3.runActiveFileOnBrowser",
 				},
 			),
 			new vscode.CodeLens(
 				new vscode.Range(0, 0, 0, 0),
 				{
-					title: "[ VSCode上で実行 ]",
+					title: "$(play) VSCode上で実行",
 					command: "nadesiko3.runActiveFileOnVSCode",
 				},
 			),

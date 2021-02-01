@@ -1,10 +1,26 @@
 import { LexError, rawTokenize, tokenize } from "./tokenize"
 import { expect } from "chai"
 import prepare from "./prepare"
-import addSourceMapToTokens from "./source_mapping"
 import { lex } from "./parse"
+import * as indent from "./indent"
 
-describe("lex", () => {
+const mustRawTokenize = (code: string) => {
+    const result = rawTokenize(code)
+    if (result instanceof LexError) {
+        throw result
+    }
+    return result
+}
+
+const mustLex = (code: string) => {
+    const result = lex(code)
+    if (result instanceof LexError) {
+        throw result
+    }
+    return result
+}
+
+describe("rawTokenize", () => {
     it("prepare", () => {
         expect(prepare("リンゴの値段は30")).to.deep.equal([
             { text: '_', sourcePosition: 0 },
@@ -32,113 +48,92 @@ describe("lex", () => {
         expect(tokens[0].preprocessedCodeOffset).to.equal(0) // 0-7: 「こんにちは」と
         expect(tokens[1].preprocessedCodeOffset).to.equal(8) // 8-9: 表示
     })
-    it("もし〜ならば", () => {
-        const result = lex(`もし、Aが５ならば`) as any
-        expect(result.tokens[2]).to.deep.include({ value: 5, startOffset: 5, endOffset: 6 })
-        expect(result.tokens[3]).to.deep.include({ value: 'ならば', startOffset: 6, endOffset: 9 })
+    it("スペース扱いの文字", () => {
+        const result = mustRawTokenize("ならば、A")
+        expect(result[0]).to.deep.include({ value: "ならば", startOffset: 0, endOffset: 3 })
+        expect(result[1]).to.deep.include({ value: "A", startOffset: 4, endOffset: 5 })
     })
-    it("読点", () => {
-        //@ts-ignore
-        const result = lex("ならば、A") as any
-        expect(result.tokens[0]).to.deep.include({ value: "ならば", startOffset: 0, endOffset: 3 })
-        expect(result.tokens[1]).to.deep.include({ value: "A", startOffset: 4, endOffset: 5 })
-    })
-    it("複数回呼び出し", () => {
-        // キャッシュでバグったためテスト
-        const a = lex("# ああ")
-        const b = lex("# ああ")
-        if (a instanceof LexError || b instanceof LexError) {
-            throw new Error("error")
-        }
-        expect(a.tokens).to.deep.equal(a.tokens)
-        expect(a.commentTokens).to.deep.equal(a.commentTokens)
-    })
-    it("template string", () => {
-        const a = lex(`あは20\n"{あ}"`)
-        if (a instanceof LexError) {
-            throw new Error("error")
-        }
-        expect(a.tokens[4]).to.include({ type: "string", startOffset: 5, endOffset: 7 })
-        expect(a.tokens[5]).to.include({ type: "&", startOffset: 7, endOffset: 7 })
-        expect(a.tokens[6]).to.include({ value: "あ", startOffset: 7, endOffset: 8 })
-        expect(a.tokens[7]).to.include({ type: "&", startOffset: 8, endOffset: 8 })
-        expect(a.tokens[8]).to.include({ type: "string", startOffset: 8, endOffset: 10 })
-    })
-
-    const sourceMap = (code: string) => {
-        const preprocessed = prepare(code)
-        const tokens = tokenize(preprocessed.map((v) => v.text).join(""), 0, "")
-        if (tokens instanceof LexError) {
-            throw new Error("error")
-        }
-        return addSourceMapToTokens(tokens, preprocessed, code)
-            .map((v) => ({ value: v.value, start: v.startOffset, end: v.endOffset }))
-    }
-
     it("句点無し", () => {
-        expect(sourceMap(`「こんにちは」と表示する`)).to.deep.equal([
-            { value: 'こんにちは', start: 0, end: 8 },
-            { value: '表示', start: 8, end: 12 },
-        ])
+        const result = mustRawTokenize(`「こんにちは」と表示する`)
+        expect(result[0]).to.deep.include({ value: 'こんにちは', startOffset: 0, endOffset: 8 })
+        expect(result[1]).to.deep.include({ value: '表示', startOffset: 8, endOffset: 12 })
     })
     it("句点あり", () => {
-        // @ts-ignore
-        expect(sourceMap(`「こんにちは」と表示する。`)).to.deep.equal([
-            { value: 'こんにちは', start: 0, end: 8 },
-            { value: '表示', start: 8, end: 12 },
-            { value: ';', start: 12, end: 13 }
-        ])
+        const result = mustRawTokenize(`「こんにちは」と表示する。`)
+        expect(result[0]).to.deep.include({ value: 'こんにちは', startOffset: 0, endOffset: 8 })
+        expect(result[1]).to.deep.include({ value: '表示', startOffset: 8, endOffset: 12 })
+        expect(result[2]).to.deep.include({ value: ';', startOffset: 12, endOffset: 13 })
     })
     it("複数行", () => {
-        expect(sourceMap(`「こんにちは」と表示する。「こんにちは」と表示する。`)).to.deep.equal([
-            { value: 'こんにちは', start: 0, end: 8 },
-            { value: '表示', start: 8, end: 12 },
-            { value: ';', start: 12, end: 13 },
-            { value: 'こんにちは', start: 13, end: 21 },
-            { value: '表示', start: 21, end: 25 },
-            { value: ';', start: 25, end: 26 }
-        ])
+        const result = mustRawTokenize(`「こんにちは」と表示する。「こんにちは」と表示する。`)
+        expect(result[0]).to.deep.include({ value: 'こんにちは', startOffset: 0, endOffset: 8 })
+        expect(result[1]).to.deep.include({ value: '表示', startOffset: 8, endOffset: 12 })
+        expect(result[2]).to.deep.include({ value: ';', startOffset: 12, endOffset: 13 })
+        expect(result[3]).to.deep.include({ value: 'こんにちは', startOffset: 13, endOffset: 21 })
+        expect(result[4]).to.deep.include({ value: '表示', startOffset: 21, endOffset: 25 })
+        expect(result[5]).to.deep.include({ value: ';', startOffset: 25, endOffset: 26 })
     })
     it("行コメント (1)", () => {
-        expect(sourceMap(`# コメント`)).to.deep.equal([
-            { value: '# コメント', start: 0, end: 6 },
-            { value: 0, start: 6, end: 6 }
-        ])
+        const result = mustRawTokenize(`# コメント`)
+        expect(result[0]).to.deep.include({ value: '# コメント', startOffset: 0, endOffset: 6 })
+        expect(result[1]).to.deep.include({ value: 0, startOffset: 6, endOffset: 6 })
     })
     it("行コメント (2)", () => {
-        expect(sourceMap(`# コメント\na`)).to.deep.equal([
-            { value: '# コメント', start: 0, end: 6 },
-            { value: 0, start: 6, end: 7 },
-            { value: 'a', start: 7, end: 8 },
-        ])
+        const result = mustRawTokenize(`# コメント\na`)
+        expect(result[0]).to.deep.include({ value: '# コメント', startOffset: 0, endOffset: 6 })
+        expect(result[1]).to.deep.include({ value: 0, startOffset: 6, endOffset: 7 })
+        expect(result[2]).to.deep.include({ value: 'a', startOffset: 7, endOffset: 8 })
     })
     it("複数行のコメント (1)", () => {
-        expect(sourceMap(`/*\nここは全部コメント\nここは全部コメント\n*/`)).to.deep.equal([
-            { value: 'ここは全部コメント\nここは全部コメント\n', start: 0, end: 25 },
-        ])
+        const result = mustRawTokenize(`/*\nここは全部コメント\nここは全部コメント\n*/`)
+        expect(result[0]).to.deep.include({ value: 'ここは全部コメント\nここは全部コメント\n', startOffset: 0, endOffset: 25 })
     })
     it("複数行のコメント (2)", () => {
-        expect(sourceMap(`/*\nここは全部コメント\nここは全部コメント\n*/a`)).to.deep.equal([
-            { value: 'ここは全部コメント\nここは全部コメント\n', start: 0, end: 25 },
-            { value: 'a', start: 25, end: 26 }
-        ])
+        const result = mustRawTokenize(`/*\nここは全部コメント\nここは全部コメント\n*/a`)
+        expect(result[0]).to.deep.include({ value: 'ここは全部コメント\nここは全部コメント\n', startOffset: 0, endOffset: 25 })
+        expect(result[1]).to.deep.include({ value: 'a', startOffset: 25, endOffset: 26 })
     })
     it("'_' + 改行", () => {
-        expect(sourceMap(`[_\n]\nりんごの値段は30`)[5]).to.deep.equal({ value: '値段', start: 9, end: 12 })
+        expect(mustRawTokenize(`[_\n]\nりんごの値段は30`)[5]).to.deep.include({ value: '値段', startOffset: 9, endOffset: 12 })
     })
     it("large file", () => {
-        const code = `A=20\n`.repeat(1000)
-        const preprocessed = prepare(code)
+        mustRawTokenize(`A=20\n`.repeat(1000))
+    })
+    it("インデント構文", () => {
+        const result = mustRawTokenize(`！インデント構文\n2回\n    「1」を表示\n\n「2」を表示`)
 
-        // TODO: インデント構文
+        // 1つ目のブロック
+        expect(result[0]).to.deep.include({ value: '!インデント構文', startOffset: 0, endOffset: 8 })
+        expect(result[2]).to.deep.include({ value: 2, startOffset: 9, endOffset: 10 })
+        expect(result[3]).to.deep.include({ value: '回', startOffset: 10, endOffset: 11 })
+        expect(result[5]).to.deep.include({ value: '1', startOffset: 16, endOffset: 20 })
+        expect(result[6]).to.deep.include({ value: '表示', startOffset: 20, endOffset: 22 })
+        expect(result[8]).to.deep.include({ value: 'ここまで', startOffset: null, endOffset: null })
 
-        // トークン分割
-        const tokens = tokenize(preprocessed.map((v) => v.text).join(""), 0, "")
-        if (tokens instanceof LexError) {
-            return tokens
-        }
+        // 自動挿入された「ここまで」の後
+        expect(result[10]).to.deep.include({ value: '2', startOffset: 24, endOffset: 28 })
+        expect(result[11]).to.deep.include({ value: '表示', startOffset: 28, endOffset: 30 })
+    })
+})
 
-        // ソースマップを計算
-        const result = addSourceMapToTokens(tokens, preprocessed, code)
+describe("lex", () => {
+    it("複数回呼び出し", () => {
+        const a = mustLex("# ああ")
+        const b = mustLex("# ああ")
+        expect(a.tokens).to.deep.equal(b.tokens)
+        expect(a.commentTokens).to.deep.equal(b.commentTokens)
+    })
+    it("独立した助詞「ならば」", () => {
+        const result = mustLex(`もし、Aが５ならば`).tokens
+        expect(result[2]).to.deep.include({ value: 5, startOffset: 5, endOffset: 6 })
+        expect(result[3]).to.deep.include({ value: 'ならば', startOffset: 6, endOffset: 9 })
+    })
+    it("string_exへの埋め込み", () => {
+        const a = mustLex(`あは20\n"{あ}"`).tokens
+        expect(a[4]).to.include({ type: "string", startOffset: 5, endOffset: 7 })
+        expect(a[5]).to.include({ type: "&", startOffset: 7, endOffset: 7 })
+        expect(a[6]).to.include({ value: "あ", startOffset: 7, endOffset: 8 })
+        expect(a[7]).to.include({ type: "&", startOffset: 8, endOffset: 8 })
+        expect(a[8]).to.include({ type: "string", startOffset: 8, endOffset: 10 })
     })
 })

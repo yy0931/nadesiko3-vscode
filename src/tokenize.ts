@@ -2,6 +2,7 @@ import lexRules from './nako3/nako_lex_rules'
 import josi from './nako3/nako_josi_list'
 import prepare from './prepare'
 import addSourceMapToTokens from './source_mapping'
+import * as indent from "./indent"
 const josiRE = josi.josiRE
 
 export interface Token {
@@ -177,9 +178,11 @@ export const rawTokenize = (code: string): TokenWithSourceMap[] | LexError => {
         return previousParsingResult.result
     }
 
-    const preprocessed = prepare(code)
+    // インデント構文
+    const { code: code2, insertedLines, deletedLines } = indent.convert(code)
 
-    // TODO: インデント構文
+    // 前処理
+    const preprocessed = prepare(code2)
 
     // トークン分割
     const tokens = tokenize(preprocessed.map((v) => v.text).join(""), 0, "")
@@ -188,7 +191,7 @@ export const rawTokenize = (code: string): TokenWithSourceMap[] | LexError => {
     }
 
     // ソースマップを計算
-    const result = addSourceMapToTokens(tokens, preprocessed, code)
+    const result = addSourceMapToTokens(tokens, preprocessed, code2, insertedLines, deletedLines)
     previousParsingResult = {
         code, result: [...result.map((v) => ({ ...v }))]
     }

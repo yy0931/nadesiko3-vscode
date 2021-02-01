@@ -1,9 +1,12 @@
 import * as vscode from 'vscode'
-import NakoCompiler from './nako3/nako3'
-import { plugins } from './plugins'
+import NakoCompiler = require('nadesiko3/src/nako3')
 import { semanticTokensProvider, legend } from './semantic_tokens_provider'
 import updateDecorations from './decorations'
 import WebNakoServer from './web_nako_server'
+import { mockPlugins } from "./nako3_plugins"
+
+import pluginNode = require("nadesiko3/src/plugin_node")
+import pluginCSV = require("nadesiko3/src/plugin_csv")
 
 const codeLendsProvider: vscode.CodeLensProvider = {
 	provideCodeLenses(
@@ -74,7 +77,7 @@ export function activate(context: vscode.ExtensionContext) {
 				return
 			}
 			const compiler = new NakoCompiler()
-			for (const plugin of plugins) {
+			for (const plugin of [pluginNode, pluginCSV]) {
 				compiler.addPlugin(plugin)
 			}
 			// 「表示」の動作を上書き
@@ -92,7 +95,7 @@ export function activate(context: vscode.ExtensionContext) {
 			})
 			try {
 				// NOTE: 「N秒後」とかを使っていると関数を抜けた後も実行され続ける
-				compiler.runReset(activeTextEditor.document.getText())
+				compiler.runReset(activeTextEditor.document.getText(), "")
 			} catch (e) {
 				vscode.window.showErrorMessage(e.message)
 			}
@@ -104,7 +107,7 @@ export function activate(context: vscode.ExtensionContext) {
 				return
 			}
 			const compiler = new NakoCompiler()
-			for (const plugin of plugins) {
+			for (const plugin of Object.values(mockPlugins)) {
 				compiler.addPlugin(plugin)
 			}
 			let content: string | null = null

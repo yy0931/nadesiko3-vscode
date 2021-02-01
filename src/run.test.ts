@@ -1,10 +1,12 @@
 import { expect } from "chai"
-import NakoCompiler from "./nako3/nako3"
-import { plugins } from "./plugins"
+import NakoCompiler = require("nadesiko3/src/nako3")
+import pluginNode = require("nadesiko3/src/plugin_node")
+import pluginCSV = require("nadesiko3/src/plugin_csv")
 
 describe("run", () => {
     const compiler = new NakoCompiler()
-    for (const plugin of plugins) {
+
+    for (const plugin of [pluginNode, pluginCSV]) {
         compiler.addPlugin(plugin)
     }
 
@@ -13,6 +15,6 @@ describe("run", () => {
 「あ,い
 う,え,
 お,か」をCSV取得してJSONエンコードして表示
-`).log).to.equal(`[["あ","い"],["う","え",""],["お","か"]]`)
+`, "").log).to.equal(`[["あ","い"],["う","え",""],["お","か"]]`)
     })
 })

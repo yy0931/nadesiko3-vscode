@@ -88,9 +88,8 @@
 	},
 	"scripts": {
 		"vscode:prepublish": "yarn run compile",
-		"compile": "tsc",
-		"lint": "eslint src --ext ts",
-		"watch": "tsc -watch",
+		"compile": "ts-node gen_nako3_plugin_declaration.ts && tsc",
+		"watch": "ts-node gen_nako3_plugin_declaration.ts && tsc -watch",
 		"test": "TS_NODE_FILES=\"true\" mocha -r ts-node/register 'src/**/*.test.ts'"
 	},
 	"devDependencies": {
@@ -126,6 +125,7 @@
 		"html": "^1.0.0",
 		"iconv-lite": "^0.6.2",
 		"jquery": "^3.5.1",
+		"json5": "^2.2.0",
 		"marked": "^1.2.8",
 		"nadesiko3": "^3.1.16",
 		"node-fetch": "^2.6.1",

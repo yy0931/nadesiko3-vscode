@@ -1,8 +1,9 @@
-import lexRules from './nako3/nako_lex_rules'
-import josi from './nako3/nako_josi_list'
+import lexRules = require('nadesiko3/src/nako_lex_rules')
+import * as josi from 'nadesiko3/src/nako_josi_list'
 import prepare from './prepare'
 import addSourceMapToTokens from './source_mapping'
 import * as indent from "./indent"
+
 const josiRE = josi.josiRE
 
 export interface Token {

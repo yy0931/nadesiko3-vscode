@@ -124,7 +124,7 @@ describe("lex", () => {
         expect(a.commentTokens).to.deep.equal(b.commentTokens)
     })
     it("独立した助詞「ならば」", () => {
-        const result = mustLex(`もし、Aが５ならば`).tokens
+        const result = mustLex(`もし、5が5ならば`).tokens
         expect(result[2]).to.deep.include({ value: 5, startOffset: 5, endOffset: 6 })
         expect(result[3]).to.deep.include({ value: 'ならば', startOffset: 6, endOffset: 9 })
     })

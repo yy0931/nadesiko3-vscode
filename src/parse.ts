@@ -1,10 +1,10 @@
-import * as nakoParserConst from "./nako3/nako_parser_const"
+import * as nakoParserConst from "nadesiko3/src/nako_parser_const"
 import { rawTokenize, tokenize, Token, LexError, TokenWithSourceMap } from "./tokenize"
-import reservedWords from "./nako3/nako_reserved_words"
-import josi from "./nako3/nako_josi_list"
-import { getBuiltinFuncList } from "./plugins"
+import reservedWords = require("nadesiko3/src/nako_reserved_words")
+import { tarareba } from "nadesiko3/src/nako_josi_list"
+import { mockPlugins, asFuncList, Plugin } from "./nako3_plugins"
 
-type FuncList = Record<string, Record<string, unknown>>
+type FuncList = Record<string, any>
 
 // NakoCompiler.parse の前半
 export const lex = (code: string): { commentTokens: TokenWithSourceMap[], tokens: TokenWithSourceMap[], funclist: FuncList } | LexError => {
@@ -17,7 +17,7 @@ export const lex = (code: string): { commentTokens: TokenWithSourceMap[], tokens
     const commentTokens: TokenWithSourceMap[] = tokens.filter((t) => t.type === "line_comment" || t.type === "range_comment")
         .map((v) => ({ ...v }))  // clone
 
-    const funclist = getBuiltinFuncList() as FuncList
+    const funclist = asFuncList(mockPlugins)
     convertToken(tokens, funclist, true)
 
     for (let i = 0; i < tokens.length; i++) {
@@ -241,7 +241,7 @@ const replaceWord = (tokens: TokenWithSourceMap[], funclist: FuncList) => {
             continue
         }
         // 助詞のならばをトークンとする
-        if (josi.tarareba[t.josi]) {
+        if (tarareba[t.josi]) {
             const josi = (t.josi !== 'でなければ') ? 'ならば' : 'でなければ'
             t.josi = ''
             tokens.splice(i + 1, 0, { type: 'ならば', value: josi, line: t.line, column: t.column, file: t.file, josi: '', startOffset: t.endOffset! - t.rawJosi.length, endOffset: t.endOffset, rawJosi: "" })

@@ -2,7 +2,7 @@
 	"name": "nadesiko3-vscode",
 	"displayName": "日本語プログラミング言語 なでしこv3",
 	"description": "",
-	"version": "1.5.1",
+	"version": "1.5.2",
 	"license": "MIT",
 	"publisher": "yy0931",
 	"repository": {
@@ -97,7 +97,7 @@
 		"@types/express": "^4.17.11",
 		"@types/mocha": "^8.2.0",
 		"@types/node": "^14.14.22",
-		"@types/vscode": "^1.52.0",
+		"@types/vscode": "^1.51.0",
 		"@types/ws": "^7.4.0",
 		"chai": "^4.2.0",
 		"json5": "^2.2.0",

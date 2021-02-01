@@ -24,7 +24,6 @@
 			{
 				"id": "nadesiko3",
 				"extensions": [
-					".nako",
 					".nako3"
 				],
 				"configuration": "./language/language-configuration.json"

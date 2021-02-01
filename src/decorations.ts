@@ -4,12 +4,21 @@ import { LexError } from './tokenize'
 
 const tokenDecorationType = vscode.window.createTextEditorDecorationType({
     after: {
-        backgroundColor: 'gray',
         contentText: '|',
         color: 'transparent',
         width: '1px',
         textDecoration: "underline",
     },
+    dark: {
+        after: {
+            backgroundColor: '#737373',
+        }
+    },
+    light: {
+        after: {
+            backgroundColor: '#bbbbbb',
+        }
+    }
 })
 
 const josiDecorationType = vscode.window.createTextEditorDecorationType({

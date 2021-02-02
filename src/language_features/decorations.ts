@@ -72,9 +72,14 @@ export default function updateDecorations() {
                 hoverMessage = hoverMessage.appendText(`${text}: ${token.type}\n${phrase}`)
                 const declarationText = fn.declaration.flatMap((d): string[] => {
                     switch (d.type) {
-                        case "builtin": return []
                         case "inFile": return [`${d.token.startOffset} ~ ${d.token.endOffset} 文字目`]
-                        case "plugin": return [`プラグイン ${d.name}`]
+                        case "plugin": {
+                            if (d.name.startsWith("builtin_")) {
+                                return [d.name]
+                            } else {
+                                return [`プラグイン ${d.name}`]
+                            }
+                        }
                         default: const _: never = d; throw new Error()
                     }
                 }).join(", ")

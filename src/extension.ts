@@ -11,9 +11,9 @@ import * as fs from "fs"
 import * as path from "path"
 import * as json5 from "json5"
 import documentHighlightProvider from './language_features/document_highlight_provider'
-import definitionProvider from './language_features/definition_provider'
 import codeLendsProvider from './language_features/code_lens'
 import updateDiagnostics from './language_features/diagnostics'
+import DefinitionProvider from './language_features/definition_provider'
 
 export function activate(context: vscode.ExtensionContext) {
 	const webNakoServer = new WebNakoServer()
@@ -37,12 +37,39 @@ export function activate(context: vscode.ExtensionContext) {
 	updateDecorations()
 	setDiagnosticsTimeout()
 
+	const virtualDocuments = new Map<string, string>()
+
+	// overwrite = false の場合、呼ぶたびにメモリを消費していくことに注意
+	const showVirtualDocument = async (content: string, name: string, extension: string, overwrite: boolean, show: boolean): Promise<vscode.Uri> => {
+		let documentPath = `${name}${extension}`
+		if (!overwrite) {
+			let i = 2
+			while (virtualDocuments.has(documentPath)) {
+				documentPath = `${name}-${i}${extension}`
+				i++
+			}
+		}
+		virtualDocuments.set(documentPath, content)
+		const url = vscode.Uri.parse(`nadesiko3:${documentPath}`)
+		if (show) {
+			const document = await vscode.workspace.openTextDocument(url)
+			vscode.window.showTextDocument(document, { viewColumn: vscode.ViewColumn.Beside })
+		}
+		return url
+	}
+
 	context.subscriptions.push(
+		{ dispose() { virtualDocuments.clear() } },
 		webNakoServer,
 		diagnosticCollection,
+		vscode.workspace.registerTextDocumentContentProvider("nadesiko3", {
+			provideTextDocumentContent(uri: vscode.Uri): string {
+				return virtualDocuments.get(uri.path) || ""
+			}
+		}),
 		vscode.languages.registerCodeLensProvider(selector, codeLendsProvider),
 		vscode.languages.registerDocumentSemanticTokensProvider(selector, semanticTokensProvider, legend),
-		vscode.languages.registerDefinitionProvider(selector, definitionProvider),
+		vscode.languages.registerDefinitionProvider(selector, new DefinitionProvider(showVirtualDocument)),
 		vscode.languages.registerDocumentHighlightProvider(selector, documentHighlightProvider),
 		vscode.window.onDidChangeActiveTextEditor((editor) => {
 			updateDecorations()
@@ -110,7 +137,7 @@ export function activate(context: vscode.ExtensionContext) {
 				panel.webview.postMessage({ type: "error", line: e.message })
 			}
 		}),
-		vscode.commands.registerCommand("nadesiko3.compileActiveFile", () => {
+		vscode.commands.registerCommand("nadesiko3.compileActiveFile", async () => {
 			const editor = vscode.window.activeTextEditor
 			if (editor === undefined) {
 				vscode.window.showErrorMessage("ファイルが開かれていません")
@@ -127,10 +154,7 @@ export function activate(context: vscode.ExtensionContext) {
 				vscode.window.showErrorMessage(e.message)
 			}
 			if (content !== null) {
-				vscode.workspace.openTextDocument({ content, language: "javascript" })
-					.then((document) => {
-						vscode.window.showTextDocument(document)
-					})
+				showVirtualDocument(content, "out", ".js", false, true)
 			}
 		}),
 		vscode.commands.registerCommand("nadesiko3.runActiveFileOnBrowser", () => {

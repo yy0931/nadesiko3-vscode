@@ -11,7 +11,6 @@ type FuncList = Record<string,
         declaration: (
             | { type: "plugin", name: string }
             | { type: "inFile", token: TokenWithSourceMap }
-            | { type: "builtin" }
         )[]
     }
     & (
@@ -83,8 +82,6 @@ export const lex = (code: string): { commentTokens: TokenWithSourceMap[], tokens
 
     const funclist: FuncList = {
         ...asFuncList(mockPlugins),
-        // 表示の助詞に「と」も許す
-        ...{ 表示: { type: 'func', josi: [['と', 'を', 'の']], fn: (...args: unknown[]) => { }, declaration: [{ type: "builtin" }] } },
         ...readDeclarations(code),
     }
 
@@ -139,8 +136,27 @@ export class ParseError extends Error {
     }
 }
 
+export interface Ast {
+    // 一部のプロパティのみ。
+    type: string
+    cond?: TokenWithSourceMap | Ast
+    block?: (TokenWithSourceMap | Ast)[] | TokenWithSourceMap | Ast
+    false_block?: TokenWithSourceMap | Ast
+    name?: TokenWithSourceMap | Ast
+    josi?: string
+    value?: unknown
+    line?: number
+    column?: unknown
+    file?: unknown
+    preprocessedCodeOffset?: unknown
+    preprocessedCodeLength?: unknown
+    startOffset?: unknown
+    endOffset?: unknown
+    rawJosi?: unknown
+}
+
 // NakoCompiler.parse
-export const parse = (code: string): { ok: unknown } | { err: LexErrorWithSourceMap | ParseError } => {
+export const parse = (code: string): { ok: Ast } | { err: LexErrorWithSourceMap | ParseError } => {
     const lexerOutput = lex(code)
     if (lexerOutput instanceof LexErrorWithSourceMap) {
         return { err: lexerOutput }

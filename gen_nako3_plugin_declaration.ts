@@ -58,6 +58,11 @@ for (const file of fs.readdirSync(srcDir)) {
     result += `    ${JSON.stringify(file)}: ${json5.stringify(declarations)},\n`
 }
 
+// 「（Aと|Aを|Aの）表示」が実行時に定義される場合が多いため、特別に追加する
+result += `    ${JSON.stringify("builtin_display.js")}: ${json5.stringify({
+    表示: { type: 'func', josi: [['と', 'を', 'の']] },
+})}`
+
 fs.writeFileSync("src/nako3_plugins_data.ts", `${result}}
 
 export default pluginData

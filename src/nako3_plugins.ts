@@ -24,7 +24,7 @@ for (const [pluginName, plugin] of Object.entries(pluginData)) {
 
 /** pluginsをcloneして、1つのプラグインへまとめる。 */
 type PluginFuncList = Record<string, { declaration: { type: "plugin", name: string }[] } & (PluginFunction | PluginVariable)>
-export function asFuncList(plugins: Record<string, Plugin>): PluginFuncList {
+export const asFuncList = (plugins: Record<string, Plugin>): PluginFuncList => {
     const funclist: PluginFuncList = {}
     for (const [name, plugin] of Object.entries(plugins)) {
         for (const [k, v] of Object.entries(plugin)) {

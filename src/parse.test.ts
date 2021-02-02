@@ -1,7 +1,7 @@
 import { LexError, rawTokenize, tokenize } from "./tokenize"
 import { expect } from "chai"
 import prepare from "./prepare"
-import { lex, parse } from "./parse"
+import { lex, parse, readDeclarations } from "./parse"
 import * as indent from "./indent"
 
 describe("rawTokenize", () => {
@@ -105,6 +105,12 @@ describe("rawTokenize", () => {
         // 自動挿入された「ここまで」の後
         expect(result[10]).to.deep.include({ value: '2', startOffset: 24, endOffset: 28 })
         expect(result[11]).to.deep.include({ value: '表示', startOffset: 28, endOffset: 30 })
+    })
+})
+
+describe("readDeclarations", () => {
+    it("関数の宣言", () => {
+        expect(readDeclarations("#!「（nを）階乗」を宣言")["階乗"]).to.deep.include({ type: "func", josi: [["を"]], varnames: ["n"] })
     })
 })
 

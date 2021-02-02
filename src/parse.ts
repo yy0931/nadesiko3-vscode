@@ -8,6 +8,42 @@ import NakoSyntaxError = require("nadesiko3/src/nako_syntax_error")
 
 type FuncList = Record<string, any>
 
+/**
+ * "#!「（nを）階乗」を宣言" の形のコメントをパースする
+ */
+export const readDeclarations = (code: string): FuncList => {
+    const funcList: FuncList = {}
+    const lines = code.split("\n")
+    for (const line of lines) {
+        // "#"で始まり、"宣言"を含む行について
+        const matches = /^[#＃][!！]\s*(.*宣言.*)\s*$/.exec(line)
+        if (matches === null) {
+            continue
+        }
+
+        // なでしこのプログラムとしてパース
+        const tokens1 = rawTokenize(matches[1])
+        if (tokens1 instanceof LexErrorWithSourceMap) {
+            continue
+        }
+        if (!(tokens1.length === 2 &&
+            tokens1[0].type === "string" &&
+            tokens1[0].josi === "を" &&
+            tokens1[1].type === "word" &&
+            tokens1[1].value === "宣言")) {
+            continue
+        }
+
+        // 文字列部分を関数の定義としてパース
+        const tokens2 = rawTokenize(`●${tokens1[0].value}とは\nここまで`)
+        if (tokens2 instanceof LexErrorWithSourceMap) {
+            continue
+        }
+        preDefineFunc(tokens2, funcList)
+    }
+    return funcList
+}
+
 // NakoCompiler.parse の前半
 export const lex = (code: string): { commentTokens: TokenWithSourceMap[], tokens: TokenWithSourceMap[], funclist: FuncList } | LexErrorWithSourceMap => {
     let tokens = rawTokenize(code)
@@ -19,7 +55,12 @@ export const lex = (code: string): { commentTokens: TokenWithSourceMap[], tokens
     const commentTokens: TokenWithSourceMap[] = tokens.filter((t) => t.type === "line_comment" || t.type === "range_comment")
         .map((v) => ({ ...v }))  // clone
 
-    const funclist = asFuncList(mockPlugins)
+    const funclist = {
+        ...asFuncList(mockPlugins),
+        ...readDeclarations(code),
+    }
+
+
     convertToken(tokens, funclist, true)
 
     for (let i = 0; i < tokens.length; i++) {

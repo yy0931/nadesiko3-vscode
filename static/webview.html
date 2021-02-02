@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title></title>
+    <style>
+code {
+    color: var(--vscode-editor-foreground);
+}
+    </style>
+</head>
+<body>
+    <pre class="message_container"><span class="tag">コンパイラのメッセージ</span><hr><code id="message"></code></pre>
+    <pre class="output_container"><span class="tag">プログラムの出力</span><hr><code id="output"></code></pre>
+    <script>
+const output = /** @type {HTMLElement} */(document.querySelector("#output"))
+const message = /** @type {HTMLElement} */(document.querySelector("#message"))
+window.addEventListener("message", (/** @type {{ data: { type: "output", line: string } | { type: "error", line: string } }} */{data}) => {
+    switch (data.type) {
+        case "output":
+            output.innerText += data.line + "\n"
+            break
+        case "error":
+            message.innerText += data.line + "\n"
+            break
+        default:
+            message.innerText += `Unexpected message type: ${data.type}\n`
+    }
+})
+    </script>
+</body>
+</html>

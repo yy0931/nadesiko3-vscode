@@ -9,6 +9,9 @@ import pluginNode = require("nadesiko3/src/plugin_node")
 import pluginCSV = require("nadesiko3/src/plugin_csv")
 import { parse } from './parse'
 import { LexErrorWithSourceMap } from './tokenize'
+import * as fs from "fs"
+import * as path from "path"
+import * as json5 from "json5"
 
 const codeLendsProvider: vscode.CodeLensProvider = {
 	provideCodeLenses(
@@ -97,6 +100,7 @@ export function activate(context: vscode.ExtensionContext) {
 	const webNakoServer = new WebNakoServer()
 	const selector = { language: "nadesiko3" }
 	const diagnosticCollection = vscode.languages.createDiagnosticCollection("nadesiko3")
+	let panel: vscode.WebviewPanel | null = null
 
 	context.subscriptions.push(
 		webNakoServer,
@@ -137,28 +141,49 @@ export function activate(context: vscode.ExtensionContext) {
 				vscode.window.showErrorMessage("ファイルが開かれていません")
 				return
 			}
+			if (panel === null) {
+				panel = vscode.window.createWebviewPanel(
+					"nadesiko3Output",
+					"なでしこv3: プログラムの出力",
+					vscode.ViewColumn.Beside,
+					{
+						enableScripts: true,
+					}
+				)
+			} else {
+				panel.reveal(vscode.ViewColumn.Beside)
+			}
+
+			panel.webview.html = fs.readFileSync(path.join(__dirname, "../static/webview.html")).toString()
+
+			panel.onDidDispose(() => {
+				panel = null
+			}, null, context.subscriptions)
+
 			const compiler = new NakoCompiler()
 			for (const plugin of [pluginNode, pluginCSV]) {
 				compiler.addPlugin(plugin)
 			}
 			// 「表示」の動作を上書き
 			compiler.setFunc('表示', [['と', 'を', 'の']], (s: any, sys: any) => {
+				if (panel === null) {
+					return
+				}
 				if (typeof s === "string") {
-					vscode.window.showInformationMessage(s)
+					panel.webview.postMessage({ type: "output", line: s })
 				} else {
 					try {
-						vscode.window.showInformationMessage(JSON.stringify(s))
+						panel.webview.postMessage({ type: "output", line: json5.stringify(s) })
 					} catch (e) {
-						vscode.window.showInformationMessage(`${s}`)
+						panel.webview.postMessage({ type: "output", line: `${s}` })
 					}
 				}
-				sys.__varslist[0]['表示ログ'] += (s + '\n')
 			})
 			try {
 				// NOTE: 「N秒後」とかを使っていると関数を抜けた後も実行され続ける
 				compiler.runReset(activeTextEditor.document.getText(), "")
 			} catch (e) {
-				vscode.window.showErrorMessage(e.message)
+				panel.webview.postMessage({ type: "error", line: e.message })
 			}
 		}),
 		vscode.commands.registerCommand("nadesiko3.compileActiveFile", () => {

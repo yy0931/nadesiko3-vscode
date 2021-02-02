@@ -41,7 +41,11 @@ const codeLendsProvider: vscode.CodeLensProvider = {
 }
 
 
-const updateDiagnostics = (editor: vscode.TextEditor, diagnosticCollection: vscode.DiagnosticCollection) => {
+const updateDiagnostics = (diagnosticCollection: vscode.DiagnosticCollection) => {
+	const editor = vscode.window.activeTextEditor
+	if (editor === undefined) {
+		return
+	}
 	if (editor.document.languageId !== "nadesiko3") {
 		diagnosticCollection.delete(editor.document.uri)
 		return
@@ -93,14 +97,26 @@ const updateDiagnostics = (editor: vscode.TextEditor, diagnosticCollection: vsco
 }
 
 export function activate(context: vscode.ExtensionContext) {
-	let activeTextEditor = vscode.window.activeTextEditor
-	if (activeTextEditor !== undefined) {
-		updateDecorations(activeTextEditor)
-	}
 	const webNakoServer = new WebNakoServer()
 	const selector = { language: "nadesiko3" }
 	const diagnosticCollection = vscode.languages.createDiagnosticCollection("nadesiko3")
 	let panel: vscode.WebviewPanel | null = null
+
+	// シンタックスエラーの表示が速すぎるとコードを打っている最中に全体に赤線が引かれてしまうため、
+	// ドキュメントに変更があったら、その後0.5秒間変更が無い場合に限り、シンタックスエラーを表示する。
+	let diagnosticsCount = 0
+	const setDiagnosticsTimeout = () => {
+		diagnosticsCount++
+		const count = diagnosticsCount
+		setTimeout(() => {
+			if (count === diagnosticsCount) {
+				updateDiagnostics(diagnosticCollection)
+			}
+		}, 500);
+	}
+
+	updateDecorations()
+	setDiagnosticsTimeout()
 
 	context.subscriptions.push(
 		webNakoServer,
@@ -108,36 +124,23 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.languages.registerCodeLensProvider(selector, codeLendsProvider),
 		vscode.languages.registerDocumentSemanticTokensProvider(selector, semanticTokensProvider, legend),
 		vscode.window.onDidChangeActiveTextEditor((editor) => {
-			activeTextEditor = editor
-			if (activeTextEditor === undefined) {
-				return
-			}
-			updateDecorations(activeTextEditor)
-			updateDiagnostics(activeTextEditor, diagnosticCollection)
+			updateDecorations()
+			setDiagnosticsTimeout()
 		}),
 		vscode.workspace.onDidChangeTextDocument((event) => {
-			activeTextEditor = vscode.window.activeTextEditor
-			if (activeTextEditor === undefined) {
-				return
-			}
-			updateDecorations(activeTextEditor)
-			updateDiagnostics(activeTextEditor, diagnosticCollection)
+			updateDecorations()
+			setDiagnosticsTimeout()
 		}),
 		vscode.workspace.onDidOpenTextDocument((document) => {
-			activeTextEditor = vscode.window.activeTextEditor
-			if (activeTextEditor === undefined) {
-				return
-			}
-			updateDecorations(activeTextEditor)
-			updateDiagnostics(activeTextEditor, diagnosticCollection)
+			updateDecorations()
+			setDiagnosticsTimeout()
 		}),
 		vscode.workspace.onDidCloseTextDocument((doc) => {
-			activeTextEditor = undefined
 			diagnosticCollection.delete(doc.uri)
 		}),
 		vscode.commands.registerCommand("nadesiko3.runActiveFileOnVSCode", () => {
-			activeTextEditor = vscode.window.activeTextEditor
-			if (activeTextEditor === undefined) {
+			const editor = vscode.window.activeTextEditor
+			if (editor === undefined) {
 				vscode.window.showErrorMessage("ファイルが開かれていません")
 				return
 			}
@@ -181,14 +184,14 @@ export function activate(context: vscode.ExtensionContext) {
 			})
 			try {
 				// NOTE: 「N秒後」とかを使っていると関数を抜けた後も実行され続ける
-				compiler.runReset(activeTextEditor.document.getText(), "")
+				compiler.runReset(editor.document.getText(), "")
 			} catch (e) {
 				panel.webview.postMessage({ type: "error", line: e.message })
 			}
 		}),
 		vscode.commands.registerCommand("nadesiko3.compileActiveFile", () => {
-			activeTextEditor = vscode.window.activeTextEditor
-			if (activeTextEditor === undefined) {
+			const editor = vscode.window.activeTextEditor
+			if (editor === undefined) {
 				vscode.window.showErrorMessage("ファイルが開かれていません")
 				return
 			}
@@ -198,7 +201,7 @@ export function activate(context: vscode.ExtensionContext) {
 			}
 			let content: string | null = null
 			try {
-				content = compiler.compile(activeTextEditor.document.getText(), activeTextEditor.document.fileName, false)
+				content = compiler.compile(editor.document.getText(), editor.document.fileName, false)
 			} catch (e) {
 				vscode.window.showErrorMessage(e.message)
 			}
@@ -210,12 +213,12 @@ export function activate(context: vscode.ExtensionContext) {
 			}
 		}),
 		vscode.commands.registerCommand("nadesiko3.runActiveFileOnBrowser", () => {
-			activeTextEditor = vscode.window.activeTextEditor
-			if (activeTextEditor === undefined) {
+			const editor = vscode.window.activeTextEditor
+			if (editor === undefined) {
 				vscode.window.showErrorMessage("ファイルが開かれていません")
 				return
 			}
-			webNakoServer.runCode(activeTextEditor.document.fileName, activeTextEditor.document.getText())
+			webNakoServer.runCode(editor.document.fileName, editor.document.getText())
 		}),
 	)
 }

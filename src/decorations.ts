@@ -25,7 +25,11 @@ const josiDecorationType = vscode.window.createTextEditorDecorationType({
     textDecoration: "underline",
 })
 
-export default function updateDecorations(editor: vscode.TextEditor) {
+export default function updateDecorations() {
+    const editor = vscode.window.activeTextEditor
+    if (editor === undefined) {
+        return
+    }
     if (editor.document.languageId !== "nadesiko3") {
         editor.setDecorations(tokenDecorationType, [])
         editor.setDecorations(josiDecorationType, [])

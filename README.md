@@ -2,7 +2,7 @@
 
 プログラミング言語なでしこv3の拡張機能
 
-![screenshot](https://raw.githubusercontent.com/yy0931/vscode-nadesiko3/master/nako.png)
+![screenshot](https://raw.githubusercontent.com/yy0931/nadesiko3-vscode/master/nako.png)
 
 ## Features
 
@@ -19,4 +19,4 @@
 
 トークンの区切り線や助詞の強調が不要な場合は、VSCodeの設定から無効化出来ます。
 
-外部プラグインの使用に由来するシンタックスエラーは、特定のコメント文を追加することで回避出来ます。[プラグインについて](https://github.com/yy0931/vscode-nadesiko3/master/プラグインについて.md) を参照してください。
+外部プラグインの使用に由来するシンタックスエラーは、特定のコメント文を追加することで回避出来ます。[プラグインについて](https://github.com/yy0931/nadesiko3-vscode/blob/main/プラグインについて.md) を参照してください。

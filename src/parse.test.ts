@@ -176,7 +176,7 @@ describe("parse", () => {
         expect(err.endOffset).equal(8)
     })
     it("エラー位置の取得 （行末の場合）", () => {
-        const err = mustNotParse("「こんにちは」と表示する")
+        const err = mustNotParse("「こんにちは」に表示する")
         expect(err.startOffset).equal(11)
         expect(err.endOffset).equal(12)
     })

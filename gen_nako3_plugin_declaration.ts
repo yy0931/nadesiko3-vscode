@@ -5,7 +5,9 @@ import * as json5 from "json5"
 let result = `\
 // ${path.basename(__filename)} によって自動生成されたコード
 
-const plugins: Record<string, Record<string, Omit<PluginFunction, "fn"> | PluginVariable>> = {
+import { PluginFunction, PluginVariable } from "./nako3_plugins"
+
+const pluginData: Record<string, Record<string, Omit<PluginFunction, "fn"> | PluginVariable>> = {
 `
 
 const srcDir = path.join(__dirname, "node_modules/nadesiko3/src")
@@ -56,38 +58,7 @@ for (const file of fs.readdirSync(srcDir)) {
     result += `    ${JSON.stringify(file)}: ${json5.stringify(declarations)},\n`
 }
 
-fs.writeFileSync("src/nako3_plugins.ts", `${result}}
+fs.writeFileSync("src/nako3_plugins_data.ts", `${result}}
 
-export interface PluginFunction {
-    type: "func"
-    josi: string[][]
-    fn: (...args: any[]) => any
-}
-export interface PluginVariable {
-    type: "const" | "var"
-}
-export type Plugin = Record<string, PluginFunction | PluginVariable>
-
-// 空のfnを加える
-export const mockPlugins: Record<string, Plugin> = {}
-for (const [pluginName, plugin] of Object.entries(plugins)) {
-    mockPlugins[pluginName] = {}
-    for (const [name, f] of Object.entries(plugin)) {
-        if (name === "初期化") {
-            continue
-        }
-        mockPlugins[pluginName][name] = f.type === "func" ? { ...f, fn: (...args: any[]) => { } } : { ...f }
-    }
-}
-
-/** pluginsをcloneして、1つのプラグインへまとめる。 */
-export function asFuncList(plugins: Record<string, Plugin>): Plugin {
-    const funclist: Plugin = {}
-    for (const plugin of Object.values(plugins)) {
-        for (const [k, v] of Object.entries(plugin)) {
-            funclist[k] = { ...v }
-        }
-    }
-    return funclist
-}
+export default pluginData
 `)

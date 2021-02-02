@@ -142,7 +142,7 @@ export function activate(context: vscode.ExtensionContext) {
 				compiler.addPlugin(plugin)
 			}
 			// 「表示」の動作を上書き
-			compiler.setFunc('表示', [['を', 'と']], (s: any, sys: any) => {
+			compiler.setFunc('表示', [['と', 'を', 'の']], (s: any, sys: any) => {
 				if (typeof s === "string") {
 					vscode.window.showInformationMessage(s)
 				} else {

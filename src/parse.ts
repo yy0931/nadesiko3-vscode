@@ -57,6 +57,8 @@ export const lex = (code: string): { commentTokens: TokenWithSourceMap[], tokens
 
     const funclist = {
         ...asFuncList(mockPlugins),
+        // 表示の助詞に「と」も許す
+        ...{ 表示: { type: 'func', josi: [['と', 'を', 'の']], fn: (...args: unknown[]) => { } } },
         ...readDeclarations(code),
     }
 

@@ -1,6 +1,7 @@
 import * as vscode from 'vscode'
-import { lex } from './parse'
-import { LexError } from './tokenize'
+import { lex } from '../parse'
+import { LexError } from '../tokenize'
+import { splitRangeToLines, filterVisibleTokens } from './utils'
 
 export const legend = new vscode.SemanticTokensLegend(
     ["namespace", "class", "enum", "interface", "struct", "typeParameter", "type", "parameter", "variable", "property", "enumMember", "event", "function", "method", "macro", "label", "comment", "string", "keyword", "number", "regexp", "operator"],
@@ -14,24 +15,7 @@ export const semanticTokensProvider: vscode.DocumentSemanticTokensProvider = {
         const tokensBuilder = new vscode.SemanticTokensBuilder(legend)
 
         const addSemanticToken = (start: vscode.Position, end: vscode.Position, tokenType: string, tokenModifiers?: string[] | undefined) => {
-            // 各行へ分割
-            const ranges = new Array<vscode.Range>()
-            if (start.line === end.line) {
-                ranges.push(new vscode.Range(start, end))
-            } else {
-                for (let y = start.line; y <= end.line; y++) {
-                    if (y === start.line) {
-                        ranges.push(new vscode.Range(start, new vscode.Position(y, document.lineAt(y).text.length)))
-                    } else if (y === end.line) {
-                        ranges.push(new vscode.Range(new vscode.Position(y, 0), end))
-                    } else {
-                        ranges.push(document.lineAt(y).range)
-                    }
-                }
-            }
-
-            // トークンを追加
-            for (const range of ranges) {
+            for (const range of splitRangeToLines(document, start, end)) {
                 tokensBuilder.push(range, tokenType, tokenModifiers)
             }
         }
@@ -42,16 +26,9 @@ export const semanticTokensProvider: vscode.DocumentSemanticTokensProvider = {
             return tokensBuilder.build()
         }
 
-        for (const token of [...tokens.commentTokens, ...tokens.tokens]) {
-            if (token.startOffset === null || token.endOffset === null || token.type === "eol" || token.type === "eof") {
-                continue
-            }
+        for (const token of filterVisibleTokens([...tokens.commentTokens, ...tokens.tokens])) {
             const start = document.positionAt(token.startOffset)
             const end = document.positionAt(token.endOffset)
-            if (start.isEqual(end)) {
-                continue
-            }
-
             switch (token.type) {
                 case "line_comment":
                 case "range_comment":
@@ -59,7 +36,7 @@ export const semanticTokensProvider: vscode.DocumentSemanticTokensProvider = {
                     break
                 case "def_test":
                 case "def_func":
-                    addSemanticToken(start, end, "keyword", ["declaration"])
+                    addSemanticToken(start, end, "keyword", [])
                     break
                 case "func":
                     // 関数に「には」がついていれば、その部分を色付けする
@@ -80,18 +57,22 @@ export const semanticTokensProvider: vscode.DocumentSemanticTokensProvider = {
                             break
                         }
                     }
-                    addSemanticToken(start, end, "function", [])
+                    if (token.isDefinition) {
+                        addSemanticToken(start, end, "function", ["declaration"])
+                    } else {
+                        addSemanticToken(start, end, "function", [])
+                    }
                     break
                 case "number":
                     addSemanticToken(start, end, "number", [])
                     break
                 // 独立した助詞
                 case "とは":
-                    addSemanticToken(start, end, "macro", ["declaration"])
+                    addSemanticToken(start, end, "macro", [])
                     break
                 case "ならば":
                 case "でなければ":
-                    addSemanticToken(start, end, "keyword", ["declaration"])
+                    addSemanticToken(start, end, "keyword", [])
                     break
                 // 制御構文
                 case "ここから":
@@ -122,6 +103,7 @@ export const semanticTokensProvider: vscode.DocumentSemanticTokensProvider = {
                     addSemanticToken(start, end, "variable", ["definition"])
                     break
                 case "定数":
+                    // 変数ではないが、色付けのために変数として扱う
                     addSemanticToken(start, end, "variable", ["readonly", "definition"])
                     break
                 // 演算子

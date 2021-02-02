@@ -197,7 +197,13 @@ export const tokenize = (src: string, line: number, filename: string): Token[] |
     return result
 }
 
-export type TokenWithSourceMap = Omit<Token, "preprocessedCodeOffset" | "preprocessedCodeLength"> & { rawJosi: string, startOffset: number | null, endOffset: number | null }
+export type TokenWithSourceMap = Omit<Token, "preprocessedCodeOffset" | "preprocessedCodeLength">
+    & {
+        rawJosi: string
+        startOffset: number | null
+        endOffset: number | null
+        isDefinition?: boolean
+    }
 
 const cloneAsJSON = <T>(x: T): T => JSON.parse(JSON.stringify(x))
 

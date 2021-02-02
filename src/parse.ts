@@ -307,6 +307,7 @@ const preDefineFunc = (tokens: TokenWithSourceMap[], funclist: FuncList): void =
 
         // 関数定義か？
         if (funcName !== '') {
+            wordToken.isDefinition = true
             funclist[funcName] = {
                 type: 'func',
                 josi,

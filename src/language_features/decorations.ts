@@ -1,6 +1,7 @@
 import * as vscode from 'vscode'
-import { lex } from './parse'
-import { LexError } from './tokenize'
+import { lex } from '../parse'
+import { LexError } from '../tokenize'
+import { filterVisibleTokens } from './utils'
 
 const tokenDecorationType = vscode.window.createTextEditorDecorationType({
     after: {
@@ -48,17 +49,11 @@ export default function updateDecorations() {
     if (vscode.workspace.getConfiguration("nadesiko3").get("showTokenDecorations")) {
         const tokenDecorations = new Array<vscode.DecorationOptions>()
         let prevDecorationPos = new vscode.Position(0, 0)
-        for (const token of [...tokens.commentTokens, ...tokens.tokens]) {
-            // ソースコード上に存在しないトークンなら無視
-            if (token.startOffset === null || token.endOffset === null) {
-                continue
-            }
+        for (const token of filterVisibleTokens([...tokens.commentTokens, ...tokens.tokens])) {
             const start = editor.document.positionAt(token.startOffset)
             const end = editor.document.positionAt(token.endOffset)
             const text = code.slice(token.startOffset, token.endOffset)
-
-            // 0文字なら無視
-            if (start.isEqual(end) || text.trim() === "" || ['eol', 'eof'].includes(token.type)) {
+            if (text.trim() === "") {
                 continue
             }
 

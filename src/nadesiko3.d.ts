@@ -133,14 +133,21 @@ declare module "nadesiko3/src/nako_parser_base" {
 
 declare module "nadesiko3/src/nako_parser3" {
     import { NakoParserBase } from "nadesiko3/src/nako_parser_base"
-
+    interface Ast<Token> {
+        // 一部のプロパティのみ。
+        type: string
+        cond?: Token | Ast<Token>
+        block?: (Token | Ast<Token>)[] | Token | Ast<Token>
+        false_block?: Token | Ast<Token>
+        josi?: string
+        value?: unknown
+        line?: number
+    }
     class NakoParser extends NakoParserBase {
-        parse(tokens: any): any
+        parse<Token>(tokens: Token): Ast<Token>
     }
     export = NakoParser
 }
-
-
 
 declare module "nadesiko3/src/nako_syntax_error" {
     class NakoSyntaxError extends Error {

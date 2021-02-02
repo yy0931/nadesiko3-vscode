@@ -6,7 +6,20 @@ import { mockPlugins, asFuncList, Plugin } from "./nako3_plugins"
 import NakoParser = require('nadesiko3/src/nako_parser3')
 import NakoSyntaxError = require("nadesiko3/src/nako_syntax_error")
 
-type FuncList = Record<string, any>
+type FuncList = Record<string,
+    {
+        declaration: (
+            | { type: "plugin", name: string }
+            | { type: "inFile", token: TokenWithSourceMap }
+            | { type: "builtin" }
+        )[]
+    }
+    & (
+        | { type: 'func', josi: string[][], fn: null | ((...args: unknown[]) => any), varnames?: string[], funcPointers?: any[] | null }
+        | { type: 'var' }
+        | { type: 'const' }
+    )
+>
 
 /**
  * "#!「（nを）階乗」を宣言" の形のコメントをパースする
@@ -14,32 +27,45 @@ type FuncList = Record<string, any>
 export const readDeclarations = (code: string): FuncList => {
     const funcList: FuncList = {}
     const lines = code.split("\n")
+    let offset = 0
     for (const line of lines) {
-        // "#"で始まり、"宣言"を含む行について
-        const matches = /^[#＃][!！]\s*(.*宣言.*)\s*$/.exec(line)
-        if (matches === null) {
-            continue
-        }
+        (() => {
+            // "#"で始まり、"宣言"を含む行について
+            const matches = /^([#＃][!！]\s*)(.*宣言.*)\s*$/.exec(line)
+            if (matches === null) {
+                return
+            }
 
-        // なでしこのプログラムとしてパース
-        const tokens1 = rawTokenize(matches[1])
-        if (tokens1 instanceof LexErrorWithSourceMap) {
-            continue
-        }
-        if (!(tokens1.length === 2 &&
-            tokens1[0].type === "string" &&
-            tokens1[0].josi === "を" &&
-            tokens1[1].type === "word" &&
-            tokens1[1].value === "宣言")) {
-            continue
-        }
+            // なでしこのプログラムとしてパース
+            const tokens1 = rawTokenize(matches[2])
+            if (tokens1 instanceof LexErrorWithSourceMap) {
+                return
+            }
+            if (!(tokens1.length === 2 &&
+                tokens1[0].type === "string" &&
+                tokens1[0].josi === "を" &&
+                tokens1[1].type === "word" &&
+                tokens1[1].value === "宣言")) {
+                return
+            }
 
-        // 文字列部分を関数の定義としてパース
-        const tokens2 = rawTokenize(`●${tokens1[0].value}とは\nここまで`)
-        if (tokens2 instanceof LexErrorWithSourceMap) {
-            continue
-        }
-        preDefineFunc(tokens2, funcList)
+            // 文字列部分を関数の定義としてパース
+            const tokens2 = rawTokenize(`●${tokens1[0].value}とは\nここまで`)
+            if (tokens2 instanceof LexErrorWithSourceMap) {
+                return
+            }
+            for (const token of tokens2) {
+                if (token.startOffset !== null) {
+                    token.startOffset += offset + matches[1].length
+                }
+                if (token.endOffset !== null) {
+                    token.endOffset += offset + matches[1].length
+                }
+            }
+            preDefineFunc(tokens2, funcList)
+        })();
+
+        offset += line.length + 1  // '\n' の分1足す
     }
     return funcList
 }
@@ -55,13 +81,12 @@ export const lex = (code: string): { commentTokens: TokenWithSourceMap[], tokens
     const commentTokens: TokenWithSourceMap[] = tokens.filter((t) => t.type === "line_comment" || t.type === "range_comment")
         .map((v) => ({ ...v }))  // clone
 
-    const funclist = {
+    const funclist: FuncList = {
         ...asFuncList(mockPlugins),
         // 表示の助詞に「と」も許す
-        ...{ 表示: { type: 'func', josi: [['と', 'を', 'の']], fn: (...args: unknown[]) => { } } },
+        ...{ 表示: { type: 'func', josi: [['と', 'を', 'の']], fn: (...args: unknown[]) => { }, declaration: [{ type: "builtin" }] } },
         ...readDeclarations(code),
     }
-
 
     convertToken(tokens, funclist, true)
 
@@ -274,6 +299,7 @@ const preDefineFunc = (tokens: TokenWithSourceMap[], funclist: FuncList): void =
         if (tokens[i] && tokens[i].type === '(') { [josi, varnames, funcPointers] = readArgs() }
 
         // 関数名
+        const wordToken = tokens[i]
         if (tokens[i] && tokens[i].type === 'word') { funcName = tokens[i++].value as string }
 
         // 関数名の後で引数定義
@@ -281,18 +307,17 @@ const preDefineFunc = (tokens: TokenWithSourceMap[], funclist: FuncList): void =
 
         // 関数定義か？
         if (funcName !== '') {
-            // @ts-ignore
             funclist[funcName] = {
                 type: 'func',
                 josi,
                 fn: null,
                 varnames,
-                funcPointers
+                funcPointers,
+                declaration: [{ type: "inFile", token: wordToken }]
             }
         }
 
         // 無名関数のために
-        //@ts-ignore
         defToken.meta = { josi, varnames, funcPointers }
     }
 }
@@ -323,9 +348,8 @@ const replaceWord = (tokens: TokenWithSourceMap[], funclist: FuncList) => {
             // 一つ前の語句が、(行頭|演算子|助詞付きの語句)なら 負数である
             const ltype = getLastType()
             if (ltype === 'eol' || nakoParserConst.opPriority[ltype] || tokens[i - 1].josi !== '') {
-                tokens.splice(i, 1) // remove '-'
-                //@ts-ignore
-                tokens[i].value *= -1
+                tokens.splice(i, 1); // remove '-'
+                (tokens[i].value as number) *= -1
             }
         }
         // 助詞の「は」を = に展開

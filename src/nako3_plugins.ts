@@ -23,16 +23,25 @@ for (const [pluginName, plugin] of Object.entries(pluginData)) {
 }
 
 /** pluginsをcloneして、1つのプラグインへまとめる。 */
-export function asFuncList(plugins: Record<string, Plugin>): Plugin {
-    const funclist: Plugin = {}
-    for (const plugin of Object.values(plugins)) {
+type PluginFuncList = Record<string, { declaration: { type: "plugin", name: string }[] } & (PluginFunction | PluginVariable)>
+export function asFuncList(plugins: Record<string, Plugin>): PluginFuncList {
+    const funclist: PluginFuncList = {}
+    for (const [name, plugin] of Object.entries(plugins)) {
         for (const [k, v] of Object.entries(plugin)) {
-            funclist[k] = { ...v }
-            if (v.type !== funclist[k].type) {
-                throw new Error(`名前 ${k} の宣言のマージに失敗`)
-            }
-            if (v.type === "func") {
-                v.josi = v.josi.map((union, i) => [...new Set(union), ...(funclist[k] as PluginFunction).josi[i]])
+            // 同じ名前の関数の宣言が複数ある場合、助詞と宣言場所のリストを結合する
+            if (funclist[k] !== undefined) {
+                const old = funclist[k]
+                if (v.type !== old.type) {
+                    throw new Error(`名前 ${k} の宣言のマージに失敗`)
+                }
+                if (old.type === "func" && v.type === "func") {
+                    for (let i = 0; i < Math.max(old.josi.length, v.josi.length); i++) {
+                        old.josi[i] = [...new Set([...(old.josi[i] || []), ...(v.josi[i] || [])])]
+                    }
+                }
+                old.declaration.push({ type: "plugin", name })
+            } else {
+                funclist[k] = { ...v, declaration: [{ type: "plugin", name }] }
             }
         }
     }

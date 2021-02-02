@@ -96,6 +96,20 @@ const updateDiagnostics = (diagnosticCollection: vscode.DiagnosticCollection) =>
 	}
 }
 
+const definitionProvider: vscode.DefinitionProvider = {
+	provideDefinition(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken): vscode.ProviderResult<vscode.Definition | vscode.DefinitionLink[]> {
+		const parserOutput = parse(document.getText())
+		if ("err" in parserOutput) {
+			return
+		}
+		parserOutput.ok
+		return new vscode.Location(document.uri, new vscode.Range(
+			document.positionAt(0),
+			document.positionAt(3),
+		))
+	}
+}
+
 export function activate(context: vscode.ExtensionContext) {
 	const webNakoServer = new WebNakoServer()
 	const selector = { language: "nadesiko3" }
@@ -123,6 +137,7 @@ export function activate(context: vscode.ExtensionContext) {
 		diagnosticCollection,
 		vscode.languages.registerCodeLensProvider(selector, codeLendsProvider),
 		vscode.languages.registerDocumentSemanticTokensProvider(selector, semanticTokensProvider, legend),
+		vscode.languages.registerDefinitionProvider(selector, definitionProvider),
 		vscode.window.onDidChangeActiveTextEditor((editor) => {
 			updateDecorations()
 			setDiagnosticsTimeout()

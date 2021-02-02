@@ -65,10 +65,27 @@ export default function updateDecorations() {
             // hoverMessage を作る
             let hoverMessage = new vscode.MarkdownString("")
             if (token.type === "func" && (token.value as string) in tokens.funclist && tokens.funclist[token.value as string].type === "func") {
-                const phrase = (tokens.funclist[token.value as string].josi as string[][])
-                    .map((clause) => clause.length === 1 ? `〜${clause[0]} ` : `〜[${clause.join("|")}] `)
+                const fn = tokens.funclist[token.value as string]
+                if (fn.type !== "func") {
+                    throw new Error("fn.type !== 'func'")
+                }
+                const phrase = fn.josi
+                    .map((clause) => clause.length === 1 ?
+                        `〜${clause[0]} ` :
+                        `〜[${clause.join("|")}] `)
                     .join("") + token.value
                 hoverMessage = hoverMessage.appendText(`${text}: ${token.type}\n${phrase}`)
+                const declarationText = fn.declaration.flatMap((d): string[] => {
+                    switch (d.type) {
+                        case "builtin": return []
+                        case "inFile": return [`${d.token.startOffset} ~ ${d.token.endOffset} 文字目`]
+                        case "plugin": return [`プラグイン ${d.name}`]
+                        default: const _: never = d; throw new Error()
+                    }
+                }).join(", ")
+                if (declarationText !== "") {
+                    hoverMessage = hoverMessage.appendText(`\n定義場所: ${declarationText}`)
+                }
             } else {
                 hoverMessage = hoverMessage.appendText(`${text}` + (text !== token.type ? `: ${token.type}` : ``) + (text !== token.value ? `\n${token.value}` : ``))
             }

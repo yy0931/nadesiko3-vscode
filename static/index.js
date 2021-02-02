@@ -3,9 +3,8 @@ const outputElement = /** @type {HTMLElement} */(document.querySelector("#output
 const messageContainer = /** @type {HTMLElement} */(document.querySelector(".message_container"))
 const outputContainer = /** @type {HTMLElement} */(document.querySelector(".output_container"))
 
-/** @type {import("../src/nako3/nako3").default} */
-// @ts-ignore
-const nako3 = navigator.nako3;
+/** @type {import("nadesiko3/src/nako3")} */
+const nako3 = /** @type {any} */(navigator).nako3;
 nako3.setFunc("言", [["を", "と"]], (/** @type {unknown} */ msg) => window.alert(msg))
 nako3.setFunc("表示", [["と", "を", "の"]], (/** @type {unknown} */ s) => {
     outputElement.innerText += `${s}\n`

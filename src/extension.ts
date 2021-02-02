@@ -137,7 +137,7 @@ export function activate(context: vscode.ExtensionContext) {
 		diagnosticCollection,
 		vscode.languages.registerCodeLensProvider(selector, codeLendsProvider),
 		vscode.languages.registerDocumentSemanticTokensProvider(selector, semanticTokensProvider, legend),
-		vscode.languages.registerDefinitionProvider(selector, definitionProvider),
+		// vscode.languages.registerDefinitionProvider(selector, definitionProvider),
 		vscode.window.onDidChangeActiveTextEditor((editor) => {
 			updateDecorations()
 			setDiagnosticsTimeout()

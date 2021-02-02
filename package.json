@@ -20,6 +20,11 @@
 	],
 	"main": "./out/extension.js",
 	"contributes": {
+		"configurationDefaults": {
+			"[nadesiko3]": {
+				"editor.wordSeparators": "`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?｀～！＠＃＄％＾＆＊（）－＝＋［｛］｝＼｜；：＇＂，．＜＞／？「」『』“”"
+			}
+		},
 		"languages": [
 			{
 				"id": "nadesiko3",

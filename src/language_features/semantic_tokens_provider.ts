@@ -1,6 +1,6 @@
 import * as vscode from 'vscode'
-import { lex } from '../parse'
-import { LexError } from '../tokenize'
+import { lex } from '../nadesiko3/nako3'
+import { LexError } from '../nadesiko3/nako_lexer'
 import { splitRangeToLines, filterVisibleTokens } from './utils'
 
 export const legend = new vscode.SemanticTokensLegend(

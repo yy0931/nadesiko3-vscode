@@ -1,7 +1,7 @@
 import * as vscode from "vscode"
 import { mockPlugins } from "../nako3_plugins"
-import { lex } from "../parse"
-import { LexErrorWithSourceMap } from "../tokenize"
+import { lex } from "../nadesiko3/nako3"
+import { LexErrorWithSourceMap } from "../nadesiko3/nako3"
 import { filterTokensByOffset } from "./utils"
 
 const createParameterName = (i: number): string => {

@@ -1,6 +1,6 @@
-import { parse } from "../parse"
+import { parse } from "../nadesiko3/nako3"
 import * as vscode from "vscode"
-import { LexErrorWithSourceMap } from "../tokenize"
+import { LexErrorWithSourceMap } from "../nadesiko3/nako3"
 
 const updateDiagnostics = (diagnosticCollection: vscode.DiagnosticCollection) => {
     const editor = vscode.window.activeTextEditor

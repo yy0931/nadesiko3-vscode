@@ -1,4 +1,8 @@
 /**
+ * nako_indent.js を、ソースマップのために insertedLines と deletedLines を出力するように変更したコード
+ */
+
+/**
  * インデント構文指定があればコードを変換する
  */
 export function convert(code: string): { code: string, insertedLines: number[], deletedLines: { lineNumber: number, len: number }[] } {

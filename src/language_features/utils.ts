@@ -1,5 +1,6 @@
 import * as vscode from "vscode"
-import { Token, TokenWithSourceMap } from "../tokenize"
+import { TokenWithSourceMap } from "../nadesiko3/nako3"
+import { Token } from "../nadesiko3/nako_lexer"
 
 export type TokenWithSourceMapNotNull = Omit<Token, "preprocessedCodeOffset" | "preprocessedCodeLength">
     & {

@@ -1,5 +1,10 @@
-// 置換を巻き戻せる文字列
-// TODO: 遅いかも
+/**
+ * nako_prepare.js を、ソースマッピングが可能なように変更したコード
+ */
+
+/**
+ * 置換を巻き戻せる文字列
+ */
 class Replace {
     private history = new Array<{ from: string, to: string, index: number }>()
 
@@ -108,7 +113,7 @@ const convert1ch = (ch: string) => {
 }
 
 // NakoPrepare.convert
-export default function prepare(code: string): Array<{ text: string, sourcePosition: number }> {
+export function convert(code: string): Array<{ text: string, sourcePosition: number }> {
     if (!code) { return [] }
     const src = new Replace(code)
     const replaceList = new Array<[string, string]>()

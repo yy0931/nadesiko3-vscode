@@ -1,7 +1,7 @@
 import * as vscode from "vscode"
-import { lex } from "../parse"
-import { LexError } from "../tokenize"
-import { filterTokensByOffset, filterVisibleTokens, TokenWithSourceMapNotNull } from "./utils"
+import { lex } from "../nadesiko3/nako3"
+import { LexError } from "../nadesiko3/nako_lexer"
+import { filterTokensByOffset, filterVisibleTokens } from "./utils"
 
 const documentHighlightProvider: vscode.DocumentHighlightProvider = {
     provideDocumentHighlights(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken): vscode.ProviderResult<vscode.DocumentHighlight[]> {

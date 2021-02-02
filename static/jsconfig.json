@@ -68,6 +68,6 @@
   },
   "include": [
     ".",
-    "../src/nadesiko3.d.ts"
+    "../src/nadesiko3/nadesiko3.d.ts"
   ]
 }

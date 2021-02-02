@@ -1,6 +1,3 @@
-import { assert } from "chai"
-import { Token, TokenWithSourceMap } from "./tokenize"
-
 /** prepareとtokenizeのソースマッピング */
 export class SourceMappingOfTokenization {
     private readonly cumulativeSum: number[]

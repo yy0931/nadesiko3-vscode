@@ -1,9 +1,9 @@
+/**
+ * nako_lexer.js を、ソースコード位置を正確に出力するように変更したコード
+ */
+
 import lexRules = require('nadesiko3/src/nako_lex_rules')
 import * as josi from 'nadesiko3/src/nako_josi_list'
-import prepare from './prepare'
-import { SourceMappingOfIndexSyntax, SourceMappingOfTokenization } from './source_mapping'
-import * as indent from "./indent"
-
 const josiRE = josi.josiRE
 
 export interface Token {
@@ -28,19 +28,7 @@ export class LexError extends Error {
     }
 }
 
-export class LexErrorWithSourceMap extends LexError {
-    constructor(
-        reason: string,
-        preprocessedCodeStartOffset: number,
-        preprocessedCodeEndOffset: number,
-        public readonly startOffset: number | null,
-        public readonly endOffset: number | null,
-    ) {
-        super(reason, preprocessedCodeStartOffset, preprocessedCodeEndOffset)
-    }
-}
-
-// new NakoLexer().setInput
+// NakoLexer.setInput
 export const tokenize = (src: string, line: number, filename: string): Token[] | LexError => {
     const srcLength = src.length
 
@@ -195,74 +183,4 @@ export const tokenize = (src: string, line: number, filename: string): Token[] |
         }
     }
     return result
-}
-
-export type TokenWithSourceMap = Omit<Token, "preprocessedCodeOffset" | "preprocessedCodeLength">
-    & {
-        rawJosi: string
-        startOffset: number | null
-        endOffset: number | null
-        isDefinition?: boolean
-    }
-
-const cloneAsJSON = <T>(x: T): T => JSON.parse(JSON.stringify(x))
-
-// NakoCompiler.rawtokenize
-let rawTokenizeCache: { code: string, result: TokenWithSourceMap[] } | null = null
-export const rawTokenize = (code: string): TokenWithSourceMap[] | LexErrorWithSourceMap => {
-    if (rawTokenizeCache !== null && rawTokenizeCache.code === code) {
-        return cloneAsJSON(rawTokenizeCache.result)
-    }
-
-    // インデント構文
-    const { code: code2, insertedLines, deletedLines } = indent.convert(code)
-
-    // 前処理
-    const preprocessed = prepare(code2)
-
-    // トークン分割
-    const tokens = tokenize(preprocessed.map((v) => v.text).join(""), 0, "")
-
-    const tokenizationSourceMapping = new SourceMappingOfTokenization(code2.length, preprocessed)
-    const indentationSyntaxSourceMapping = new SourceMappingOfIndexSyntax(code2, insertedLines, deletedLines)
-
-    if (tokens instanceof LexError) {
-        // エラー位置をソースコード上の位置に変換して返す
-        const dest = indentationSyntaxSourceMapping.map(tokenizationSourceMapping.map(tokens.preprocessedCodeStartOffset), tokenizationSourceMapping.map(tokens.preprocessedCodeEndOffset))
-
-        return new LexErrorWithSourceMap(
-            tokens.reason,
-            tokens.preprocessedCodeStartOffset,
-            tokens.preprocessedCodeEndOffset,
-            dest.startOffset,
-            dest.endOffset,
-        )
-    }
-
-    // インデント構文の処理後のソースコード上の位置を求める
-    const tokensWithSourceMap = tokens.map((token, i) => {
-        const startOffset = tokenizationSourceMapping.map(token.preprocessedCodeOffset)
-        const endOffset = tokenizationSourceMapping.map(token.preprocessedCodeOffset + token.preprocessedCodeLength)
-
-        return {
-            ...token,
-            startOffset,
-            endOffset,
-            rawJosi: token.josi,
-        } as TokenWithSourceMap
-    })
-
-    // インデント構文の処理前のソースコード上の位置へ変換する
-    for (const token of tokensWithSourceMap) {
-        const dest = indentationSyntaxSourceMapping.map(token.startOffset, token.endOffset)
-        token.startOffset = dest.startOffset
-        token.endOffset = dest.endOffset
-    }
-
-    rawTokenizeCache = {
-        code,
-        result: cloneAsJSON(tokensWithSourceMap)
-    }
-
-    return tokensWithSourceMap
 }

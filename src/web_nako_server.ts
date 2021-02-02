@@ -5,7 +5,6 @@ import * as open from "open"
 import * as express from "express"
 import * as path from "path"
 import * as ws from "ws"
-import * as url from "url"
 
 export type Data = { fileName: string, code: string }
 

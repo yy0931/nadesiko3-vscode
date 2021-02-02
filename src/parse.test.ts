@@ -1,8 +1,8 @@
-import { LexError, rawTokenize, tokenize } from "./tokenize"
+import { LexError, tokenize } from "./nadesiko3/nako_lexer"
+import { rawTokenize } from "./nadesiko3/nako3"
 import { expect } from "chai"
-import prepare from "./prepare"
-import { lex, parse, readDeclarations } from "./parse"
-import * as indent from "./indent"
+import * as nakoPrepare from "./nadesiko3/nako_prepare"
+import { lex, parse, readDeclarations } from "./nadesiko3/nako3"
 
 describe("rawTokenize", () => {
     const mustRawTokenize = (code: string) => {
@@ -14,7 +14,7 @@ describe("rawTokenize", () => {
     }
 
     it("prepare", () => {
-        expect(prepare("リンゴの値段は30")).to.deep.equal([
+        expect(nakoPrepare.convert("リンゴの値段は30")).to.deep.equal([
             { text: '_', sourcePosition: 0 },
             { text: '_', sourcePosition: 0 },
             { text: 'リ', sourcePosition: 0 },

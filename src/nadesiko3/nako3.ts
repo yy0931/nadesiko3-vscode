@@ -1,10 +1,38 @@
+/**
+ * nako3.js の一部のメソッドを、ソースマッピングが可能なように変更したコード
+ */
+
+import * as nakoPrepare from './nako_prepare'
+import { SourceMappingOfIndexSyntax, SourceMappingOfTokenization } from '../source_mapping'
+import * as nakoIndent from "./nako_indent"
 import * as nakoParserConst from "nadesiko3/src/nako_parser_const"
-import { rawTokenize, tokenize, Token, LexError, TokenWithSourceMap, LexErrorWithSourceMap } from "./tokenize"
 import reservedWords = require("nadesiko3/src/nako_reserved_words")
 import { tarareba } from "nadesiko3/src/nako_josi_list"
-import { mockPlugins, asFuncList, Plugin } from "./nako3_plugins"
+import { mockPlugins, asFuncList } from "../nako3_plugins"
 import NakoParser = require('nadesiko3/src/nako_parser3')
 import NakoSyntaxError = require("nadesiko3/src/nako_syntax_error")
+import { LexError, Token, tokenize } from "./nako_lexer"
+
+export class LexErrorWithSourceMap extends LexError {
+    constructor(
+        reason: string,
+        preprocessedCodeStartOffset: number,
+        preprocessedCodeEndOffset: number,
+        public readonly startOffset: number | null,
+        public readonly endOffset: number | null,
+    ) {
+        super(reason, preprocessedCodeStartOffset, preprocessedCodeEndOffset)
+    }
+}
+
+export type TokenWithSourceMap = Omit<Token, "preprocessedCodeOffset" | "preprocessedCodeLength">
+    & {
+        rawJosi: string
+        startOffset: number | null
+        endOffset: number | null
+        isDefinition?: boolean
+    }
+
 
 type FuncList = Record<string,
     {
@@ -20,9 +48,101 @@ type FuncList = Record<string,
     )
 >
 
+export class ParseError extends Error {
+    constructor(
+        public readonly token: TokenWithSourceMap,
+        public readonly startOffset: number,
+        public readonly endOffset: number,
+        public readonly message: string,
+    ) {
+        super(message)
+    }
+}
+
+export interface Ast {
+    // 一部のプロパティのみ。
+    type: string
+    cond?: TokenWithSourceMap | Ast
+    block?: (TokenWithSourceMap | Ast)[] | TokenWithSourceMap | Ast
+    false_block?: TokenWithSourceMap | Ast
+    name?: TokenWithSourceMap | Ast
+    josi?: string
+    value?: unknown
+    line?: number
+    column?: unknown
+    file?: unknown
+    preprocessedCodeOffset?: unknown
+    preprocessedCodeLength?: unknown
+    startOffset?: unknown
+    endOffset?: unknown
+    rawJosi?: unknown
+}
+
+const cloneAsJSON = <T>(x: T): T => JSON.parse(JSON.stringify(x))
+
+// NakoCompiler.rawtokenize
+let rawTokenizeCache: { code: string, result: TokenWithSourceMap[] } | null = null
+export const rawTokenize = (code: string): TokenWithSourceMap[] | LexErrorWithSourceMap => {
+    if (rawTokenizeCache !== null && rawTokenizeCache.code === code) {
+        return cloneAsJSON(rawTokenizeCache.result)
+    }
+
+    // インデント構文
+    const { code: code2, insertedLines, deletedLines } = nakoIndent.convert(code)
+
+    // 前処理
+    const preprocessed = nakoPrepare.convert(code2)
+
+    // トークン分割
+    const tokens = tokenize(preprocessed.map((v) => v.text).join(""), 0, "")
+
+    const tokenizationSourceMapping = new SourceMappingOfTokenization(code2.length, preprocessed)
+    const indentationSyntaxSourceMapping = new SourceMappingOfIndexSyntax(code2, insertedLines, deletedLines)
+
+    if (tokens instanceof LexError) {
+        // エラー位置をソースコード上の位置に変換して返す
+        const dest = indentationSyntaxSourceMapping.map(tokenizationSourceMapping.map(tokens.preprocessedCodeStartOffset), tokenizationSourceMapping.map(tokens.preprocessedCodeEndOffset))
+
+        return new LexErrorWithSourceMap(
+            tokens.reason,
+            tokens.preprocessedCodeStartOffset,
+            tokens.preprocessedCodeEndOffset,
+            dest.startOffset,
+            dest.endOffset,
+        )
+    }
+
+    // インデント構文の処理後のソースコード上の位置を求める
+    const tokensWithSourceMap = tokens.map((token, i) => {
+        const startOffset = tokenizationSourceMapping.map(token.preprocessedCodeOffset)
+        const endOffset = tokenizationSourceMapping.map(token.preprocessedCodeOffset + token.preprocessedCodeLength)
+
+        return {
+            ...token,
+            startOffset,
+            endOffset,
+            rawJosi: token.josi,
+        } as TokenWithSourceMap
+    })
+
+    // インデント構文の処理前のソースコード上の位置へ変換する
+    for (const token of tokensWithSourceMap) {
+        const dest = indentationSyntaxSourceMapping.map(token.startOffset, token.endOffset)
+        token.startOffset = dest.startOffset
+        token.endOffset = dest.endOffset
+    }
+
+    rawTokenizeCache = {
+        code,
+        result: cloneAsJSON(tokensWithSourceMap)
+    }
+
+    return tokensWithSourceMap
+}
+
 /**
- * "#!「（nを）階乗」を宣言" の形のコメントをパースする
- */
+* "#!「（nを）階乗」を宣言" の形のコメントをパースする
+*/
 export const readDeclarations = (code: string): FuncList => {
     const funcList: FuncList = {}
     const lines = code.split("\n")
@@ -125,35 +245,6 @@ export const lex = (code: string): { commentTokens: TokenWithSourceMap[], tokens
     return { commentTokens, tokens, funclist }
 }
 
-export class ParseError extends Error {
-    constructor(
-        public readonly token: TokenWithSourceMap,
-        public readonly startOffset: number,
-        public readonly endOffset: number,
-        public readonly message: string,
-    ) {
-        super(message)
-    }
-}
-
-export interface Ast {
-    // 一部のプロパティのみ。
-    type: string
-    cond?: TokenWithSourceMap | Ast
-    block?: (TokenWithSourceMap | Ast)[] | TokenWithSourceMap | Ast
-    false_block?: TokenWithSourceMap | Ast
-    name?: TokenWithSourceMap | Ast
-    josi?: string
-    value?: unknown
-    line?: number
-    column?: unknown
-    file?: unknown
-    preprocessedCodeOffset?: unknown
-    preprocessedCodeLength?: unknown
-    startOffset?: unknown
-    endOffset?: unknown
-    rawJosi?: unknown
-}
 
 // NakoCompiler.parse
 export const parse = (code: string): { ok: Ast } | { err: LexErrorWithSourceMap | ParseError } => {
@@ -216,6 +307,7 @@ export const parse = (code: string): { ok: Ast } | { err: LexErrorWithSourceMap 
         }
     }
 }
+
 
 // NakoCompiler.convertToken
 export const convertToken = (tokens: TokenWithSourceMap[], funclist: FuncList, isFirst = true): void => {

@@ -1,6 +1,6 @@
 import * as vscode from 'vscode'
-import { lex } from '../parse'
-import { LexError } from '../tokenize'
+import { LexErrorWithSourceMap } from '../nadesiko3/nako3'
+import { lex } from '../nadesiko3/nako3'
 import { filterVisibleTokens } from './utils'
 
 const tokenDecorationType = vscode.window.createTextEditorDecorationType({
@@ -39,7 +39,7 @@ export default function updateDecorations() {
 
     const code = editor.document.getText()
     const tokens = lex(code)
-    if (tokens instanceof LexError) {
+    if (tokens instanceof LexErrorWithSourceMap) {
         editor.setDecorations(tokenDecorationType, [])
         editor.setDecorations(josiDecorationType, [])
         return

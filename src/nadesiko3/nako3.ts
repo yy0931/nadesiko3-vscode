@@ -297,9 +297,10 @@ export const parse = (code: string): { ok: Ast } | { err: LexErrorWithSourceMap 
 
         // エラーを返す
         if (e instanceof NakoSyntaxError) {
-            const matches = /^\[文法エラー\](.*)\((.*)行目\): (.*)\n\[バージョン\] (.*)$/.exec(e.message)
+            const matches = /^\[文法エラー\](.*)\((.*)行目\): (.*)\n\[バージョン\] (.*)$/m.exec(e.message)
             if (matches === null) {
-                throw new Error(`NakoSyntaxError.message のパースに失敗: ${JSON.stringify(e.message)}`)
+                console.error(`NakoSyntaxError.message のパースに失敗: ${JSON.stringify(e.message)}`)
+                return { err: new ParseError(token, startOffset, endOffset, e.message) }
             }
             return { err: new ParseError(token, startOffset, endOffset, matches[3]) }
         } else {

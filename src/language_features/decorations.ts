@@ -1,4 +1,5 @@
 import * as vscode from 'vscode'
+import { createParameterDeclaration } from '../document'
 import { LexErrorWithSourceMap } from '../nadesiko3/nako3'
 import { lex } from '../nadesiko3/nako3'
 import { filterVisibleTokens } from './utils'
@@ -64,12 +65,7 @@ export default function updateDecorations() {
                 if (fn.type !== "func") {
                     throw new Error("fn.type !== 'func'")
                 }
-                const phrase = fn.josi
-                    .map((clause) => clause.length === 1 ?
-                        `〜${clause[0]} ` :
-                        `〜[${clause.join("|")}] `)
-                    .join("") + token.value
-                hoverMessage = hoverMessage.appendText(`${text}: ${token.type}\n${phrase}`)
+                hoverMessage = hoverMessage.appendText(`${text}: ${token.type}\n${createParameterDeclaration(fn.josi)}${token.value}`)
                 const declarationText = fn.declaration.flatMap((d): string[] => {
                     switch (d.type) {
                         case "inFile": return [`${d.token.startOffset} ~ ${d.token.endOffset} 文字目`]

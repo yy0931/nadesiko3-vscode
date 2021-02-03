@@ -14,10 +14,11 @@ import documentHighlightProvider from './language_features/document_highlight_pr
 import codeLendsProvider from './language_features/code_lens'
 import updateDiagnostics from './language_features/diagnostics'
 import DefinitionProvider from './language_features/definition_provider'
+import { createDeclarationFile } from './document'
 
 export function activate(context: vscode.ExtensionContext) {
 	const webNakoServer = new WebNakoServer()
-	const selector = { language: "nadesiko3" }
+	const selector: vscode.DocumentSelector = { language: "nadesiko3", scheme: undefined }
 	const diagnosticCollection = vscode.languages.createDiagnosticCollection("nadesiko3")
 	let panel: vscode.WebviewPanel | null = null
 
@@ -33,9 +34,6 @@ export function activate(context: vscode.ExtensionContext) {
 			}
 		}, 500);
 	}
-
-	updateDecorations()
-	setDiagnosticsTimeout()
 
 	const virtualDocuments = new Map<string, string>()
 
@@ -58,10 +56,26 @@ export function activate(context: vscode.ExtensionContext) {
 		return url
 	}
 
+	// 各プラグインの宣言ファイルを作る
+	const declarationFiles = Object.entries(mockPlugins).map(([name, plugin]) => createDeclarationFile(name, plugin))
+
+	updateDecorations(declarationFiles)
+	setDiagnosticsTimeout()
+
 	context.subscriptions.push(
 		{ dispose() { virtualDocuments.clear() } },
 		webNakoServer,
 		diagnosticCollection,
+		vscode.workspace.registerTextDocumentContentProvider("nadesiko3-plugin-declaration", {
+			provideTextDocumentContent(uri: vscode.Uri): string {
+				const file = declarationFiles.find((file) => file.name === uri.path)
+				if (file === undefined) {
+					console.log(`プラグインの宣言ファイル ${uri.path} が見つかりません。`)
+					return ""
+				}
+				return file.content
+			}
+		}),
 		vscode.workspace.registerTextDocumentContentProvider("nadesiko3", {
 			provideTextDocumentContent(uri: vscode.Uri): string {
 				return virtualDocuments.get(uri.path) || ""
@@ -69,18 +83,18 @@ export function activate(context: vscode.ExtensionContext) {
 		}),
 		vscode.languages.registerCodeLensProvider(selector, codeLendsProvider),
 		vscode.languages.registerDocumentSemanticTokensProvider(selector, semanticTokensProvider, legend),
-		vscode.languages.registerDefinitionProvider(selector, new DefinitionProvider(showVirtualDocument)),
+		vscode.languages.registerDefinitionProvider(selector, new DefinitionProvider(declarationFiles)),
 		vscode.languages.registerDocumentHighlightProvider(selector, documentHighlightProvider),
 		vscode.window.onDidChangeActiveTextEditor((editor) => {
-			updateDecorations()
+			updateDecorations(declarationFiles)
 			setDiagnosticsTimeout()
 		}),
 		vscode.workspace.onDidChangeTextDocument((event) => {
-			updateDecorations()
+			updateDecorations(declarationFiles)
 			setDiagnosticsTimeout()
 		}),
 		vscode.workspace.onDidOpenTextDocument((document) => {
-			updateDecorations()
+			updateDecorations(declarationFiles)
 			setDiagnosticsTimeout()
 		}),
 		vscode.workspace.onDidCloseTextDocument((doc) => {

@@ -1,7 +1,8 @@
 import * as vscode from 'vscode'
-import { createParameterDeclaration } from '../document'
+import { createDeclarationFile, createParameterDeclaration, DeclarationFile } from '../document'
 import { LexErrorWithSourceMap } from '../nadesiko3/nako3'
 import { lex } from '../nadesiko3/nako3'
+import { mockPlugins } from '../nako3_plugins'
 import { filterVisibleTokens } from './utils'
 
 const tokenDecorationType = vscode.window.createTextEditorDecorationType({
@@ -27,7 +28,7 @@ const josiDecorationType = vscode.window.createTextEditorDecorationType({
     textDecoration: "underline",
 })
 
-export default function updateDecorations() {
+export default function updateDecorations(declarationFiles: DeclarationFile[]) {
     const editor = vscode.window.activeTextEditor
     if (editor === undefined) {
         return
@@ -65,25 +66,42 @@ export default function updateDecorations() {
                 if (fn.type !== "func") {
                     throw new Error("fn.type !== 'func'")
                 }
-                hoverMessage = hoverMessage.appendText(`${text}: ${token.type}\n${createParameterDeclaration(fn.josi)}${token.value}`)
-                const declarationText = fn.declaration.flatMap((d): string[] => {
+                hoverMessage = hoverMessage.appendCodeblock(`${createParameterDeclaration(fn.josi)}${token.value}`, "nadesiko3")
+                hoverMessage = hoverMessage.appendCodeblock(`${text}: ${token.type}`, "plaintext")
+                const declarationMarkdownLines: string[] = []
+                for (const d of fn.declaration) {
                     switch (d.type) {
-                        case "inFile": return [`${d.token.startOffset} ~ ${d.token.endOffset} 文字目`]
-                        case "plugin": {
-                            if (d.name.startsWith("builtin_")) {
-                                return [d.name]
+                        case "inFile": {
+                            if (d.token.startOffset === null) {
+                                declarationMarkdownLines.push(`${d.token.startOffset} ~ ${d.token.endOffset} 文字目`)
                             } else {
-                                return [`プラグイン ${d.name}`]
+                                const lineNumber = editor.document.lineAt(editor.document.positionAt(d.token.startOffset)).lineNumber
+                                declarationMarkdownLines.push(`${lineNumber + 1}行目`)
                             }
+                            break
+                        } case "plugin": {
+                            const file = declarationFiles.find((file) => file.name === d.name + ".nako3")
+                            if (file === undefined) {
+                                console.error(`プラグインの宣言ファイル ${d.name}.nako3 が見つかりません。`)
+                                break
+                            }
+                            const lineNumber = file.nameToLineNumber.get(token.value as string)
+                            if (lineNumber !== undefined) {
+                                const uri = vscode.Uri.parse(`nadesiko3-plugin-declaration:${file.name}`)
+                                const label = d.name.replace(/([\[\]\<\>])/g, "\\$1")
+                                declarationMarkdownLines.push(`[${label}](${uri}#L${lineNumber + 1})`)
+                            }
+                            break
                         }
                         default: const _: never = d; throw new Error()
                     }
-                }).join(", ")
-                if (declarationText !== "") {
-                    hoverMessage = hoverMessage.appendText(`\n定義場所: ${declarationText}`)
+                }
+                if (declarationMarkdownLines.length > 0) {
+                    hoverMessage = hoverMessage.appendMarkdown(`\n定義場所: ${declarationMarkdownLines.join("、")}`)
                 }
             } else {
-                hoverMessage = hoverMessage.appendText(`${text}` + (text !== token.type ? `: ${token.type}` : ``) + (text !== token.value ? `\n${token.value}` : ``))
+                hoverMessage = hoverMessage.appendCodeblock(`${token.value}`, "javascript")
+                hoverMessage = hoverMessage.appendCodeblock(`${text}` + (text !== token.type ? `: ${token.type}` : ``), "plaintext")
             }
 
             // border-left

@@ -1,0 +1,19 @@
+{
+    "$schema": "https://raw.githubusercontent.com/EB-Forks/tmlanguage-schema/master/tmlanguage.json",
+    "name": "nadesiko3",
+    "scopeName": "source.nadesiko3",
+    "patterns": [
+        {
+            "name": "meta.function.nadesiko3",
+            "match": "^(（[^）]*）)?([^（]+)$",
+            "captures": {
+                "1": {
+                    "name": "meta.parameters.nadesiko3"
+                },
+                "2": {
+                    "name": "entity.name.function.nadesiko3"
+                }
+            }
+        }
+    ]
+}

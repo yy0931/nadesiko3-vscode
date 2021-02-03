@@ -34,6 +34,13 @@
 				"configuration": "./language/language-configuration.json"
 			}
 		],
+		"grammars": [
+			{
+				"language": "nadesiko3",
+				"scopeName": "source.nadesiko3",
+				"path": "./language/nadesiko3.tmLanguage.json"
+			}
+		],
 		"menus": {
 			"editor/title": [
 				{

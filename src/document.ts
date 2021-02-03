@@ -40,5 +40,7 @@ export const createDeclarationFile = (pluginName: string, plugin: Plugin) => {
         }
     }
 
-    return { nameToLineNumber, lines }
+    return { nameToLineNumber, lines, content: lines.join("\n") + "\n", name: pluginName + ".nako3" }
 }
+
+export type DeclarationFile = ReturnType<typeof createDeclarationFile>

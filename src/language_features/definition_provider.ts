@@ -3,12 +3,12 @@ import { mockPlugins } from "../nako3_plugins"
 import { lex } from "../nadesiko3/nako3"
 import { LexErrorWithSourceMap } from "../nadesiko3/nako3"
 import { filterTokensByOffset } from "./utils"
-import { createDeclarationFile } from "../document"
+import { DeclarationFile } from "../document"
 
 export default class DefinitionProvider implements vscode.DefinitionProvider {
-    constructor(private readonly showVirtualDocument: (content: string, name: string, extension: string, overwrite: boolean, show: boolean) => Promise<vscode.Uri>) { }
+    constructor(private readonly declarationFiles: DeclarationFile[]) { }
 
-    async provideDefinition(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken): Promise<vscode.Definition | vscode.DefinitionLink[]> {
+    provideDefinition(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken): vscode.Location[] {
         const parserOutput = lex(document.getText())
         if (parserOutput instanceof LexErrorWithSourceMap) {
             return []
@@ -42,10 +42,14 @@ export default class DefinitionProvider implements vscode.DefinitionProvider {
                     case "plugin": {
                         // プラグインの宣言ファイルが存在するかのように見せかける
                         const locations = new Array<number>()
-                        const file = createDeclarationFile(declaration.name, mockPlugins[declaration.name])
+                        const file = this.declarationFiles.find((file) => file.name === declaration.name + ".nako3")
+                        if (file === undefined) {
+                            console.error(`プラグインの宣言ファイル ${declaration.name}.nako3 が見つかりません。`)
+                            break
+                        }
                         const lineNumber = file.nameToLineNumber.get(token.value as string)
-                        const uri = await this.showVirtualDocument(file.lines.join("\n") + "\n", declaration.name, ".nako3", true, false)
                         if (lineNumber !== undefined) {
+                            const uri = vscode.Uri.parse(`nadesiko3-plugin-declaration:${file.name}`)
                             result.push(new vscode.Location(uri, new vscode.Range(new vscode.Position(lineNumber, 0), new vscode.Position(lineNumber, file.lines[lineNumber].length))))
                             locations.push(lineNumber)
                         }

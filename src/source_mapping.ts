@@ -82,7 +82,7 @@ export class SourceMappingOfIndexSyntax {
             }
         }
         for (const deletedLine of this.linesDeletedByIndentationSyntax) {
-            if (tokenLine >= deletedLine.lineNumber) {
+            if (tokenLine > deletedLine.lineNumber) {
                 // "\n"の分1足す
                 if (startOffset !== null) {
                     startOffset += deletedLine.len + 1

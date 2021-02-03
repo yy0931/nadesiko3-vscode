@@ -3,7 +3,29 @@ import { rawTokenize } from "./nadesiko3/nako3"
 import { expect } from "chai"
 import * as nakoPrepare from "./nadesiko3/nako_prepare"
 import { lex, parse, readDeclarations } from "./nadesiko3/nako3"
+import * as nakoIndent from "./nadesiko3/nako_indent"
 
+describe("indent", () => {
+    it("test", () => {
+        console.log(nakoIndent.convert(`\
+！インデント構文
+
+●（nを）階乗とは
+    もしnが1と等しいならば
+        それは1
+    違えば
+        それは((n - 1)を階乗) * n
+
+もし１＝１なら
+    「こんに
+ちは」と表示
+
+「こんにちは」と表示
+
+`))
+
+    })
+})
 describe("rawTokenize", () => {
     const mustRawTokenize = (code: string) => {
         const result = rawTokenize(code)

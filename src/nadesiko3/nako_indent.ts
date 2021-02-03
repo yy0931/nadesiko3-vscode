@@ -34,7 +34,7 @@ function convertGo(code: string): { code: string, insertedLines: number[], delet
     const END = 'ここまで‰'
     const code2 = replaceRetMark(code) // 文字列の中などの改行を置換
     const lines = code2.split('\n')
-    const lines2 = []
+    const lines2: string[] = []
     const indentStack: number[] = []
     let lastIndent = 0
     lines.forEach((line) => {
@@ -103,6 +103,10 @@ function convertGo(code: string): { code: string, insertedLines: number[], delet
             for (let j = 0; j < insertedLines.length; j++) {
                 if (lines3.length < insertedLines[j]) {
                     insertedLines[j] += lines4.length - 1
+                }
+            }
+            for (let j = 0; j < deletedLines.length; j++) {
+                if (lines3.length < deletedLines[j].lineNumber) {
                     deletedLines[j].lineNumber += lines4.length - 1
                 }
             }

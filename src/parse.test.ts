@@ -7,7 +7,7 @@ import * as nakoIndent from "./nadesiko3/nako_indent"
 
 describe("indent", () => {
     it("test", () => {
-        console.log(nakoIndent.convert(`\
+        const result = nakoIndent.convert(`\
 ！インデント構文
 
 ●（nを）階乗とは
@@ -22,8 +22,15 @@ describe("indent", () => {
 
 「こんにちは」と表示
 
-`))
-
+`)
+        expect(result.insertedLines).to.deep.equal([6, 7, 11])
+        expect(result.deletedLines).to.deep.equal([
+            { lineNumber: 1, len: 0 },
+            { lineNumber: 6, len: 0 },
+            { lineNumber: 11, len: 0 },
+            { lineNumber: 13, len: 0 },
+            { lineNumber: 13, len: 0 }
+        ])
     })
 })
 describe("rawTokenize", () => {

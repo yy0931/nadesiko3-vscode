@@ -15,6 +15,9 @@ import updateDiagnostics from './language_features/diagnostics'
 import DefinitionProvider from './language_features/definition_provider'
 import { createDeclarationFile } from './document'
 import * as util from 'util'
+import { Ast, lex, parse } from './nadesiko3/nako3'
+import jsBeutify = require("js-beautify")
+import { LexError } from './nadesiko3/nako_lexer'
 
 export function activate(context: vscode.ExtensionContext) {
 	const webNakoServer = new WebNakoServer(context.extensionPath)
@@ -143,15 +146,7 @@ export function activate(context: vscode.ExtensionContext) {
 				if (panel === null) {
 					return
 				}
-				if (typeof s === "string") {
-					panel.webview.postMessage({ type: "out", line: s })
-				} else {
-					try {
-						panel.webview.postMessage({ type: "out", line: util.inspect(s) })
-					} catch (e) {
-						panel.webview.postMessage({ type: "out", line: `${s}` })
-					}
-				}
+				panel.webview.postMessage({ type: "out", line: util.inspect(s, { depth: null }) })
 			})
 			try {
 				// NOTE: 「N秒後」とかを使っていると関数を抜けた後も実行され続ける
@@ -160,8 +155,7 @@ export function activate(context: vscode.ExtensionContext) {
 				panel.webview.postMessage({ type: "err", line: e.message })
 			}
 		}),
-		vscode.commands.registerCommand("nadesiko3.compileActiveFile", async () => {
-			// FIXME: `「{表示ログクリア}」を表示する` のコンパイル結果が一致しない。return_none === true になっていないとか？
+		vscode.commands.registerCommand("nadesiko3.showJs", async () => {
 			const editor = vscode.window.activeTextEditor
 			if (editor === undefined) {
 				vscode.window.showErrorMessage("ファイルが開かれていません")
@@ -179,6 +173,88 @@ export function activate(context: vscode.ExtensionContext) {
 			}
 			if (content !== null) {
 				showVirtualDocument(content, "out", ".js", false, true)
+			}
+		}),
+		vscode.commands.registerCommand("nadesiko3.showBeautifiedJs", async () => {
+			const editor = vscode.window.activeTextEditor
+			if (editor === undefined) {
+				vscode.window.showErrorMessage("ファイルが開かれていません")
+				return
+			}
+			const compiler = new NakoCompiler()
+			for (const plugin of Object.values(mockPlugins)) {
+				compiler.addPlugin(plugin)
+			}
+			let content: string | null = null
+			try {
+				content = compiler.compile(editor.document.getText(), editor.document.fileName, false)
+			} catch (e) {
+				vscode.window.showErrorMessage(e.message)
+			}
+			if (content !== null) {
+				let code = jsBeutify.js(content, { end_with_newline: true })
+				code = code.replace(/;;+$/gm, ";") // 2重のセミコロンを適当に消す
+				showVirtualDocument(code, "out", ".js", false, true)
+			}
+		}),
+		vscode.commands.registerCommand('nadesiko3.showTokens', () => {
+			const editor = vscode.window.activeTextEditor
+			if (editor === undefined) {
+				vscode.window.showErrorMessage("ファイルが開かれていません")
+				return
+			}
+			const result = lex(editor.document.getText())
+			if (result instanceof LexError) {
+				vscode.window.showErrorMessage("コンパイルエラー")
+			} else {
+				showVirtualDocument(util.inspect(result, { depth: null }), "ast", ".js", false, true)
+			}
+		}),
+		vscode.commands.registerCommand('nadesiko3.showAst', () => {
+			const editor = vscode.window.activeTextEditor
+			if (editor === undefined) {
+				vscode.window.showErrorMessage("ファイルが開かれていません")
+				return
+			}
+			const result = parse(editor.document.getText())
+			if ("ok" in result) {
+				showVirtualDocument(util.inspect(result.ok, { depth: null }), "ast", ".js", false, true)
+			} else {
+				vscode.window.showErrorMessage("コンパイルエラー")
+			}
+		}),
+		vscode.commands.registerCommand('nadesiko3.showSimplifiedAst', () => {
+			const editor = vscode.window.activeTextEditor
+			if (editor === undefined) {
+				vscode.window.showErrorMessage("ファイルが開かれていません")
+				return
+			}
+			const result = parse(editor.document.getText())
+			if ("ok" in result) {
+				const simplifyAst = (ast: any): void => {
+					if (ast.type === "eol" || ast.type === "eof") {
+						delete ast["value"]
+						delete ast["josi"]
+					}
+					for (const key of ["line", "declaration", "column", "file", "preprocessedCodeOffset", "preprocessedCodeLength", "startOffset", "endOffset", "rawJosi"]) {
+						delete ast[key]
+					}
+					for (const key of Object.keys(ast)) {
+						if (typeof ast[key] === 'object' && ast[key] !== null && typeof ast[key].type === "string") {
+							simplifyAst(ast[key])
+						} else if (Array.isArray(ast[key])) {
+							for (const child of ast[key]) {
+								if (typeof child === "object" && child !== null && typeof child.type === "string") {
+									simplifyAst(child)
+								}
+							}
+						}
+					}
+				}
+				simplifyAst(result.ok)
+				showVirtualDocument(util.inspect(result.ok, { depth: null }), "ast", ".js", false, true)
+			} else {
+				vscode.window.showErrorMessage("コンパイルエラー")
 			}
 		}),
 		vscode.commands.registerCommand("nadesiko3.runActiveFileOnBrowser", () => {

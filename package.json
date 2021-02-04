@@ -65,7 +65,19 @@
 					"when": "editorLangId == nadesiko3"
 				},
 				{
-					"command": "nadesiko3.compileActiveFile",
+					"command": "nadesiko3.showJs",
+					"when": "editorLangId == nadesiko3"
+				},
+				{
+					"command": "nadesiko3.showBeautifiedJs",
+					"when": "editorLangId == nadesiko3"
+				},
+				{
+					"command": "nadesiko3.showAst",
+					"when": "editorLangId == nadesiko3"
+				},
+				{
+					"command": "nadesiko3.showSimplifiedAst",
 					"when": "editorLangId == nadesiko3"
 				}
 			]
@@ -83,8 +95,28 @@
 				"icon": "$(play)"
 			},
 			{
-				"command": "nadesiko3.compileActiveFile",
-				"title": "Compile Current File",
+				"command": "nadesiko3.showJs",
+				"title": "Show JavaScript Code",
+				"category": "Nadesiko3"
+			},
+			{
+				"command": "nadesiko3.showBeautifiedJs",
+				"title": "Show Beautified JavaScript Code",
+				"category": "Nadesiko3"
+			},
+			{
+				"command": "nadesiko3.showTokens",
+				"title": "Show Tokens",
+				"category": "Nadesiko3"
+			},
+			{
+				"command": "nadesiko3.showAst",
+				"title": "Show AST",
+				"category": "Nadesiko3"
+			},
+			{
+				"command": "nadesiko3.showSimplifiedAst",
+				"title": "Show Simplified AST",
 				"category": "Nadesiko3"
 			}
 		],
@@ -114,6 +146,7 @@
 	"devDependencies": {
 		"@types/chai": "^4.2.14",
 		"@types/express": "^4.17.11",
+		"@types/js-beautify": "^1.13.1",
 		"@types/mocha": "^8.2.0",
 		"@types/node": "^14.14.22",
 		"@types/vscode": "^1.51.0",
@@ -130,6 +163,7 @@
 		"express": "^4.17.1",
 		"get-port": "^5.1.1",
 		"jquery": "^3.5.1",
+		"js-beautify": "^1.13.5",
 		"json5": "^2.2.0",
 		"marked": "^1.2.8",
 		"nadesiko3": "^3.1.16",

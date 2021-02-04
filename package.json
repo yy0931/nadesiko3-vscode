@@ -25,6 +25,12 @@
 				"editor.wordSeparators": "`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?｀～！＠＃＄％＾＆＊（）－＝＋［｛］｝＼｜；：＇＂，．＜＞／？「」『』“”"
 			}
 		},
+		"snippets": [
+			{
+				"language": "nadesiko3",
+				"path": "./language/snippets.json"
+			}
+		],
 		"languages": [
 			{
 				"id": "nadesiko3",

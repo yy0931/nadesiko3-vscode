@@ -210,7 +210,4 @@ describe("parse", () => {
         expect(err.startOffset).equal(11)
         expect(err.endOffset).equal(12)
     })
-    it("test", () => {
-        console.log(util.inspect(mustParse(`NOT(「{NOT(1を表示)}」)`), { colors: true, depth: null }))
-    })
 })

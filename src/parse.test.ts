@@ -4,6 +4,7 @@ import { expect } from "chai"
 import * as nakoPrepare from "./nadesiko3/nako_prepare"
 import { lex, parse, readDeclarations } from "./nadesiko3/nako3"
 import * as nakoIndent from "./nadesiko3/nako_indent"
+import * as util from "util"
 
 describe("indent", () => {
     it("test", () => {
@@ -208,5 +209,8 @@ describe("parse", () => {
         const err = mustNotParse("「こんにちは」に表示する")
         expect(err.startOffset).equal(11)
         expect(err.endOffset).equal(12)
+    })
+    it("test", () => {
+        console.log(util.inspect(mustParse(`NOT(「{NOT(1を表示)}」)`), { colors: true, depth: null }))
     })
 })

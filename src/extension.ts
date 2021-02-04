@@ -9,15 +9,15 @@ import pluginNode = require("nadesiko3/src/plugin_node")
 import pluginCSV = require("nadesiko3/src/plugin_csv")
 import * as fs from "fs"
 import * as path from "path"
-import * as json5 from "json5"
 import documentHighlightProvider from './language_features/document_highlight_provider'
 import codeLendsProvider from './language_features/code_lens'
 import updateDiagnostics from './language_features/diagnostics'
 import DefinitionProvider from './language_features/definition_provider'
 import { createDeclarationFile } from './document'
+import * as util from 'util'
 
 export function activate(context: vscode.ExtensionContext) {
-	const webNakoServer = new WebNakoServer()
+	const webNakoServer = new WebNakoServer(context.extensionPath)
 	const selector: vscode.DocumentSelector = { language: "nadesiko3", scheme: undefined }
 	const diagnosticCollection = vscode.languages.createDiagnosticCollection("nadesiko3")
 	let panel: vscode.WebviewPanel | null = null
@@ -113,13 +113,22 @@ export function activate(context: vscode.ExtensionContext) {
 					vscode.ViewColumn.Beside,
 					{
 						enableScripts: true,
+						localResourceRoots: [
+							vscode.Uri.file(path.join(context.extensionPath, "static"))
+						]
 					}
 				)
 			} else {
 				panel.reveal(vscode.ViewColumn.Beside)
 			}
 
-			panel.webview.html = fs.readFileSync(path.join(__dirname, "../static/webview.html")).toString()
+			{
+				const staticDir = path.join(context.extensionPath, "static")
+				panel.webview.html = fs.readFileSync(path.join(staticDir, "webview.html")).toString()
+					.replace("{index.css}", panel.webview.asWebviewUri(vscode.Uri.file(path.join(staticDir, 'index.css'))).toString())
+					.replace("{webview.js}", panel.webview.asWebviewUri(vscode.Uri.file(path.join(staticDir, 'webview.js'))).toString())
+					.replace("{index.js}", panel.webview.asWebviewUri(vscode.Uri.file(path.join(staticDir, 'index.js'))).toString())
+			}
 
 			panel.onDidDispose(() => {
 				panel = null
@@ -135,12 +144,12 @@ export function activate(context: vscode.ExtensionContext) {
 					return
 				}
 				if (typeof s === "string") {
-					panel.webview.postMessage({ type: "output", line: s })
+					panel.webview.postMessage({ type: "out", line: s })
 				} else {
 					try {
-						panel.webview.postMessage({ type: "output", line: json5.stringify(s) })
+						panel.webview.postMessage({ type: "out", line: util.inspect(s) })
 					} catch (e) {
-						panel.webview.postMessage({ type: "output", line: `${s}` })
+						panel.webview.postMessage({ type: "out", line: `${s}` })
 					}
 				}
 			})
@@ -148,10 +157,11 @@ export function activate(context: vscode.ExtensionContext) {
 				// NOTE: 「N秒後」とかを使っていると関数を抜けた後も実行され続ける
 				compiler.runReset(editor.document.getText(), "")
 			} catch (e) {
-				panel.webview.postMessage({ type: "error", line: e.message })
+				panel.webview.postMessage({ type: "err", line: e.message })
 			}
 		}),
 		vscode.commands.registerCommand("nadesiko3.compileActiveFile", async () => {
+			// FIXME: `「{表示ログクリア}」を表示する` のコンパイル結果が一致しない。return_none === true になっていないとか？
 			const editor = vscode.window.activeTextEditor
 			if (editor === undefined) {
 				vscode.window.showErrorMessage("ファイルが開かれていません")

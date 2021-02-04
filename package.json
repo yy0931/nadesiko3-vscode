@@ -120,6 +120,7 @@
 		"vscode-test": "^1.5.0"
 	},
 	"dependencies": {
+		"chart.js": "^2.9.4",
 		"express": "^4.17.1",
 		"get-port": "^5.1.1",
 		"jquery": "^3.5.1",

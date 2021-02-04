@@ -8,21 +8,47 @@ html, body, .container, .left, .right {
     height: 100%;
 }
 
+/* 全体 */
 .container {
     width: 100%;
 }
 
+/* 左半分 */
 .left {
     float: left;
     width: 40%;
     min-width: 20%;
     max-width: 80%;
-    height: 100%;
     border-right: double 5px rgb(187, 187, 187);
-    overflow-x: hidden;
-    overflow-y: auto;
 }
 
+/* 左半分のグリッド */
+.output-grid {
+    height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    display: grid;
+    grid-template-rows: 45px 1fr 45px 3fr;
+    grid-template-columns: 1fr;
+}
+.label.err {
+    grid-row: 1 / 2;
+    grid-column: 1 / -1;
+}
+.code-scroll.err {
+    grid-row: 2 / 3;
+    grid-column: 1 / -1;
+}
+.label.out {
+    grid-row: 3 / 4;
+    grid-column: 1 / -1;
+}
+.code-scroll.out {
+    grid-row: 4 / 5;
+    grid-column: 1 / -1;
+}
+
+/* 右半分 */
 .right {
     width: auto;
     height: 100%;
@@ -30,56 +56,43 @@ html, body, .container, .left, .right {
     overflow-y: auto;
 }
 
-.message_container {
+/* テキストボックスのラベル */
+.label {
+    padding-left: 10px;
+    font-weight: 600;
+    padding-top: 0.3em;
+    padding-bottom: 0.3em;
+    border-bottom: 1px solid rgb(184, 184, 184);
+    margin-bottom: 10px;
+}
+
+/* テキストボックス */
+.code-scroll {
     border-bottom: rgb(184, 184, 184) solid 1px;
     padding: 5px;
     width: 100%;
     display: block;
-    height: 20%;
     overflow: scroll;
     margin: 0;
     font-size: 1.4em;
 }
-
-.message_container code {
+.code-scroll code {
+    margin-left: 10px;
+    display: block;
+}
+.code-scroll.err code {
     color: #ac2626;
 }
-
-.output_container {
-    border-bottom: rgb(184, 184, 184) solid 1px;
-    padding: 5px;
-    width: 100%;
-    display: block;
-    height: 70%;
-    overflow: scroll;
-    margin: 0;
-    font-size: 1.4em;
-}
-
-.output_container code {
+.code-scroll.out code {
     color: rgb(7, 11, 26);
 }
 
+/* キャンバス */
 #nako3_canvas_1 {
     border: rgb(184, 184, 184) solid 1px;
 }
 
-.container hr {
-    border-top: 1px solid rgb(184, 184, 184);
-    border-bottom: 0;
-    margin-bottom: 10px;
-}
-
-.container code {
-    margin-left: 10px;
-    display: block;
-}
-
-span.tag {
-    margin-left: 10px;
-    font-weight: 600;
-}
-
+/* 「クリア」ボタン */
 .clear-button {
     cursor: pointer;
     -webkit-user-select: none;
@@ -91,23 +104,20 @@ span.tag {
     padding: 0 8px;
     border-radius: 0px 4px 4px 0px;
 }
-
 .clear-button:hover {
     background: rgba(0, 0, 0, 0.103);
 }
-
 .clear-button:active {
     background: rgba(0, 0, 0, 0.226);
 }
 
+/* ツールチップ */
 .tooltip-parent {
     position: relative;
 }
-
 .tooltip {
     display: none;
 }
-
 .tooltip-parent:hover .tooltip {
     display: block;
     position: absolute;
@@ -119,7 +129,6 @@ span.tag {
     color: rgba(0, 0, 0, 0.575);
     padding: 0px 0 0px 0.5em;
 }
-
 .tooltip-parent:active .tooltip {
     background: rgba(0, 0, 0, 0.226);
 }

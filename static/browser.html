@@ -11,9 +11,17 @@
 
 	<body>
 		<div class="container">
-			<div class="left" id="left">
-				<pre class="message_container"><span class="tag">コンパイラのメッセージ</span><span id="message_clear" class="clear-button tooltip-parent"><span class="tooltip">出力をクリアする</span>🚫</span><hr><code id="message"></code></pre>
-				<pre class="output_container"><span class="tag">プログラムの出力</span><span id="output_clear" class="clear-button tooltip-parent"><span class="tooltip">出力をクリアする</span>🚫</span><hr><code id="output"></code></pre>
+			<div class="left output-grid" id="left">
+				<div class="label err">
+					コンパイラのメッセージ
+					<span id="err_clear" class="clear-button tooltip-parent"><span class="tooltip">出力をクリアする</span>🚫</span>
+				</div>
+				<pre class="err code-scroll" id="err-scroll"><code id="err"></code></pre>
+				<div class="label out">
+					プログラムの出力
+					<span id="out_clear" class="clear-button tooltip-parent"><span class="tooltip">出力をクリアする</span>🚫</span>
+				</div>
+				<pre class="out code-scroll" id="out-scroll"><code id="out"></code></pre>
 			</div>
 			<div class="right">
 				<div id="nako3_div_1"></div>
@@ -35,6 +43,7 @@
 
 		<script src="/static/jquery-ui-1.12.1.custom/jquery-ui.min.js"></script>
 		<script src="/static/index.js"></script>
+		<script src="/static/browser.js"></script>
 	</body>
 
 </html>

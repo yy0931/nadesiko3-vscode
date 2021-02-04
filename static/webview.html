@@ -4,6 +4,7 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title></title>
+    <link rel="stylesheet" href="{index.css}">
     <style>
 code {
     color: var(--vscode-editor-foreground);
@@ -11,23 +12,19 @@ code {
     </style>
 </head>
 <body>
-    <pre class="message_container"><span class="tag">コンパイラのメッセージ</span><hr><code id="message"></code></pre>
-    <pre class="output_container"><span class="tag">プログラムの出力</span><hr><code id="output"></code></pre>
-    <script>
-const output = /** @type {HTMLElement} */(document.querySelector("#output"))
-const message = /** @type {HTMLElement} */(document.querySelector("#message"))
-window.addEventListener("message", (/** @type {{ data: { type: "output", line: string } | { type: "error", line: string } }} */{data}) => {
-    switch (data.type) {
-        case "output":
-            output.innerText += data.line + "\n"
-            break
-        case "error":
-            message.innerText += data.line + "\n"
-            break
-        default:
-            message.innerText += `Unexpected message type: ${data.type}\n`
-    }
-})
-    </script>
+    <div class="output-grid" id="left">
+        <div class="label err">
+            コンパイラのメッセージ
+            <span id="err_clear" class="clear-button tooltip-parent"><span class="tooltip">出力をクリアする</span>🚫</span>
+        </div>
+        <pre class="err code-scroll" id="err-scroll"><code id="err"></code></pre>
+        <div class="label out">
+            プログラムの出力
+            <span id="out_clear" class="clear-button tooltip-parent"><span class="tooltip">出力をクリアする</span>🚫</span>
+        </div>
+        <pre class="out code-scroll" id="out-scroll"><code id="out"></code></pre>
+    </div>
+    <script src="{index.js}"></script>
+    <script src="{webview.js}"></script>
 </body>
 </html>

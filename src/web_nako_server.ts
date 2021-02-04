@@ -13,11 +13,13 @@ export default class WebNakoServer {
     private serverInfo: { port: number, server: http.Server, wsServer: ws.Server } | null = null
     private data: Data | null = null
 
+    constructor(private readonly extensionPath: string) { }
+
     async startServer() {
         const app = express()
-        app.use("/node_modules", express.static(path.join(__dirname, "../node_modules")))
-        app.use("/static", express.static(path.join(__dirname, "../static")))
-        app.get("/", (req, res) => { res.sendFile(path.join(__dirname, "../static/index.html")) })
+        app.use("/node_modules", express.static(path.join(this.extensionPath, "node_modules")))
+        app.use("/static", express.static(path.join(this.extensionPath, "static")))
+        app.get("/", (req, res) => { res.sendFile(path.join(this.extensionPath, "static/browser.html")) })
         const port = await getPort({ host: this.host })
         const server = http.createServer(app)
         const wsServer = new ws.Server({ server })

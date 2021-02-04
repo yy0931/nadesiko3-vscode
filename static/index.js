@@ -1,56 +1,29 @@
-const messageElement = /** @type {HTMLElement} */(document.querySelector("#message"))
-const outputElement = /** @type {HTMLElement} */(document.querySelector("#output"))
-const messageContainer = /** @type {HTMLElement} */(document.querySelector(".message_container"))
-const outputContainer = /** @type {HTMLElement} */(document.querySelector(".output_container"))
-const messageClearButton = /** @type {HTMLElement} */(document.querySelector("#message_clear"))
-const outputClearButton = /** @type {HTMLElement} */(document.querySelector("#output_clear"))
+const errElement = /** @type {HTMLElement} */(document.querySelector("#err"))
+const outElement = /** @type {HTMLElement} */(document.querySelector("#out"))
+const errContainer = /** @type {HTMLElement} */(document.querySelector("#err-scroll"))
+const outContainer = /** @type {HTMLElement} */(document.querySelector("#out-scroll"))
+const errClearButton = /** @type {HTMLElement} */(document.querySelector("#err_clear"))
+const outClearButton = /** @type {HTMLElement} */(document.querySelector("#out_clear"))
 
-/** @type {import("nadesiko3/src/nako3")} */
-const nako3 = /** @type {any} */(navigator).nako3;
-nako3.setFunc("言", [["を", "と"]], (/** @type {unknown} */ msg) => window.alert(msg))
-nako3.setFunc("表示", [["と", "を", "の"]], (/** @type {unknown} */ s) => {
-    outputElement.innerText += `${s}\n`
-    outputContainer.scrollTo(0, outputContainer.scrollHeight)
-})
+// 結果の出力
 
-messageClearButton.addEventListener("click", () => {
-    messageElement.innerText = ""
-})
-outputClearButton.addEventListener("click", () => {
-    outputElement.innerText = ""
-})
-
-const header = `\
-カメ描画先は『#nako3_canvas_1』。カメ全消去。
-『#nako3_canvas_1』へ描画開始。
-『#nako3_div_1』へDOM親要素設定。
-`
-
-const printError = (/** @type {string} */ text) => {
-    messageElement.innerText = text + "\n"
-    messageContainer.scrollTo(0, messageContainer.scrollHeight)
+/** @type {(type: "out" | "err", text: string) => void} */
+const println = (type, text) => {
+    if (type === "out") {
+        outElement.innerText += text + "\n"
+        outContainer.scrollTo(0, outContainer.scrollHeight)
+    } else if (type === "err") {
+        errElement.innerText += text + "\n"
+        errContainer.scrollTo(0, errContainer.scrollHeight)
+    } else {
+        throw new Error(`Unexpected type: ${type}`)
+    }
 }
 
-const ws = new WebSocket(`ws://${location.host}`)
-ws.addEventListener("message", (ev) => {
-    /** @type {import("../src/web_nako_server").Data} */
-    const data = JSON.parse(ev.data)
-    document.title = `なでしこv3: ${data.fileName}`
-    nako3.runAsync(header + data.code, data.fileName)
-        .catch((err) => {
-            printError(err.message)
-        })
+// 「クリア」ボタン
+errClearButton.addEventListener("click", () => {
+    errElement.innerText = ""
 })
-ws.addEventListener("close", () => {
-    printError("VSCodeとの接続が切れました。VSCode上でプログラムを再実行してください。")
-})
-
-// @ts-ignore
-$("#left").resizable({
-    containment: "parent",
-    handles: "e",
-    create: (/** @type {any} */ event, /** @type {any} */ ui) => {
-        // @ts-ignore
-        $(".ui-resizable-w").css("cursor", "ew-resize")
-    }
+outClearButton.addEventListener("click", () => {
+    outElement.innerText = ""
 })

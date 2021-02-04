@@ -79,3 +79,47 @@ span.tag {
     margin-left: 10px;
     font-weight: 600;
 }
+
+.clear-button {
+    cursor: pointer;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    float: right;
+    /* margin-right: 1em; */
+    padding: 0 8px;
+    border-radius: 0px 4px 4px 0px;
+}
+
+.clear-button:hover {
+    background: rgba(0, 0, 0, 0.103);
+}
+
+.clear-button:active {
+    background: rgba(0, 0, 0, 0.226);
+}
+
+.tooltip-parent {
+    position: relative;
+}
+
+.tooltip {
+    display: none;
+}
+
+.tooltip-parent:hover .tooltip {
+    display: block;
+    position: absolute;
+    right: 100%;
+    top: 0;
+    width: max-content;
+    background: rgba(0, 0, 0, 0.103);
+    border-radius: 4px 0px 0px 4px;
+    color: rgba(0, 0, 0, 0.575);
+    padding: 0px 0 0px 0.5em;
+}
+
+.tooltip-parent:active .tooltip {
+    background: rgba(0, 0, 0, 0.226);
+}

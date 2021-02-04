@@ -2,6 +2,8 @@ const messageElement = /** @type {HTMLElement} */(document.querySelector("#messa
 const outputElement = /** @type {HTMLElement} */(document.querySelector("#output"))
 const messageContainer = /** @type {HTMLElement} */(document.querySelector(".message_container"))
 const outputContainer = /** @type {HTMLElement} */(document.querySelector(".output_container"))
+const messageClearButton = /** @type {HTMLElement} */(document.querySelector("#message_clear"))
+const outputClearButton = /** @type {HTMLElement} */(document.querySelector("#output_clear"))
 
 /** @type {import("nadesiko3/src/nako3")} */
 const nako3 = /** @type {any} */(navigator).nako3;
@@ -9,6 +11,13 @@ nako3.setFunc("言", [["を", "と"]], (/** @type {unknown} */ msg) => window.al
 nako3.setFunc("表示", [["と", "を", "の"]], (/** @type {unknown} */ s) => {
     outputElement.innerText += `${s}\n`
     outputContainer.scrollTo(0, outputContainer.scrollHeight)
+})
+
+messageClearButton.addEventListener("click", () => {
+    messageElement.innerText = ""
+})
+outputClearButton.addEventListener("click", () => {
+    outputElement.innerText = ""
 })
 
 const header = `\

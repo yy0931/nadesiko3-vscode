@@ -146,6 +146,11 @@ export function activate(context: vscode.ExtensionContext) {
 				if (panel === null) {
 					return
 				}
+				// 文字列の場合はutil.inspectに掛けると''で囲まれてしまうため、そのまま送信
+				if (typeof s === "string") {
+					panel.webview.postMessage({ type: "out", line: s })
+					return
+				}
 				panel.webview.postMessage({ type: "out", line: util.inspect(s, { depth: null }) })
 			})
 			try {

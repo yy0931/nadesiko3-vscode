@@ -19,13 +19,13 @@ class Replace {
             if (index === -1) {
                 break
             }
-            this.history.push({ index, from, to })
+            this.history.unshift({ index, from, to })
             this.code = this.code.replace(from, to)
         }
     }
     public getSourcePosition(i: number): number {
-        let code = this.code
-        for (const item of [...this.history].reverse()) {
+        // 全ての操作について
+        for (const item of this.history) {
             if (item.from.length !== item.to.length) { // 文字数が変わらないなら何もしない
                 if (item.index <= i && i < item.index + item.to.length) { // 置換範囲
                     // 置換文字列が2文字以上のとき、最後の文字は最後の文字へマップする。それ以外は最初の文字へマップする。
@@ -38,7 +38,6 @@ class Replace {
                     i += item.from.length - item.to.length
                 }
             }
-            code = code.slice(0, item.index) + item.from + code.slice(item.index + item.to.length)
         }
         return i
     }

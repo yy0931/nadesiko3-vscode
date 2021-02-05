@@ -3,10 +3,10 @@
  */
 
 /**
- * 置換を巻き戻せる文字列
+ * 置換後の位置から置換前の位置へマッピングできる文字列
  */
 class Replace {
-    private history = new Array<{ from: string, to: string, index: number }>()
+    private history = new Array<{ from: number, to: number, index: number }>()
 
     constructor(private code: string) { }
 
@@ -19,23 +19,23 @@ class Replace {
             if (index === -1) {
                 break
             }
-            this.history.unshift({ index, from, to })
+            if (from.length !== to.length) {
+                this.history.unshift({ index, from: from.length, to: to.length })
+            }
             this.code = this.code.replace(from, to)
         }
     }
+    // 少し遅い（パース時間1.4秒に対して0.15秒程度）。iが単調増加することを利用して高速化できるはず。
     public getSourcePosition(i: number): number {
-        // 全ての操作について
         for (const item of this.history) {
-            if (item.from.length !== item.to.length) { // 文字数が変わらないなら何もしない
-                if (item.index <= i && i < item.index + item.to.length) { // 置換範囲
-                    // 置換文字列が2文字以上のとき、最後の文字は最後の文字へマップする。それ以外は最初の文字へマップする。
-                    if (item.to.length >= 2 && i === item.index + item.to.length - 1) {
-                        i = item.index + item.from.length - 1
-                    } else {
-                        i = item.index
-                    }
-                } else if (i >= item.index + item.to.length) { // 置換範囲より後ろ
-                    i += item.from.length - item.to.length
+            if (i >= item.index + item.to) { // 置換範囲より後ろ
+                i += item.from - item.to
+            } else if (item.index <= i && i < item.index + item.to) { // 置換範囲
+                // 置換文字列が2文字以上のとき、最後の文字は最後の文字へマップする。それ以外は最初の文字へマップする。
+                if (item.to >= 2 && i === item.index + item.to - 1) {
+                    i = item.index + item.from - 1
+                } else {
+                    i = item.index
                 }
             }
         }

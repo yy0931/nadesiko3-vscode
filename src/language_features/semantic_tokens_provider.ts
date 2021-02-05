@@ -104,7 +104,7 @@ export const semanticTokensProvider: vscode.DocumentSemanticTokensProvider = {
                     break
                 case "定数":
                     // 変数ではないが、色付けのために変数として扱う
-                    addSemanticToken(start, end, "variable", ["readonly", "definition"])
+                    addSemanticToken(start, end, "variable", ["readonly"])
                     break
                 // 演算子
                 case "shift_r0":

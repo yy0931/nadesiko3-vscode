@@ -1,21 +1,27 @@
-import * as vscode from 'vscode'
+import * as abs from './abstract_vscode'
 import { lex } from '../nadesiko3/nako3'
 import { LexError } from '../nadesiko3/nako_lexer'
 import { splitRangeToLines, filterVisibleTokens } from './utils'
 
-export const legend = new vscode.SemanticTokensLegend(
-    ["namespace", "class", "enum", "interface", "struct", "typeParameter", "type", "parameter", "variable", "property", "enumMember", "event", "function", "method", "macro", "label", "comment", "string", "keyword", "number", "regexp", "operator"],
-    ["declaration", "definition", "readonly", "static", "deprecated", "abstract", "async", "modification", "documentation", "defaultLibrary"],
-)
+export default class SemanticTokensProvider implements abs.DocumentSemanticTokensProvider {
+    public readonly legend: abs.SemanticTokensLegend
 
-export const semanticTokensProvider: vscode.DocumentSemanticTokensProvider = {
-    provideDocumentSemanticTokens(
-        document: vscode.TextDocument
-    ): vscode.ProviderResult<vscode.SemanticTokens> {
-        const tokensBuilder = new vscode.SemanticTokensBuilder(legend)
+    constructor(
+        private readonly SemanticTokensBuilder: abs.TypeofSemanticTokensBuilder,
+        SemanticTokensLegend: abs.TypeofSemanticTokensLegend,
+        private readonly VSCodeRange: abs.TypeofVSCodeRange,
+        private readonly Position: abs.TypeofPosition,
+    ) {
+        this.legend = new SemanticTokensLegend(
+            ["namespace", "class", "enum", "interface", "struct", "typeParameter", "type", "parameter", "variable", "property", "enumMember", "event", "function", "method", "macro", "label", "comment", "string", "keyword", "number", "regexp", "operator"],
+            ["declaration", "definition", "readonly", "static", "deprecated", "abstract", "async", "modification", "documentation", "defaultLibrary"],
+        )
+    }
+    provideDocumentSemanticTokens(document: abs.TextDocument): abs.ProviderResult<abs.SemanticTokens> {
+        const tokensBuilder = new this.SemanticTokensBuilder(this.legend)
 
-        const addSemanticToken = (start: vscode.Position, end: vscode.Position, tokenType: string, tokenModifiers?: string[] | undefined) => {
-            for (const range of splitRangeToLines(document, start, end)) {
+        const addSemanticToken = (start: abs.Position, end: abs.Position, tokenType: string, tokenModifiers?: string[] | undefined) => {
+            for (const range of splitRangeToLines(document, start, end, this.VSCodeRange, this.Position)) {
                 tokensBuilder.push(range, tokenType, tokenModifiers)
             }
         }
@@ -41,7 +47,7 @@ export const semanticTokensProvider: vscode.DocumentSemanticTokensProvider = {
                 case "func":
                     // 関数に「には」がついていれば、その部分を色付けする
                     if (token.josi === "には" || token.josi === "は~") {
-                        const word = document.getText(new vscode.Range(start, end))
+                        const word = document.getText(new this.VSCodeRange(start, end))
                         let josiPos: number
                         if (token.josi === "には") {
                             josiPos = word.lastIndexOf("には")

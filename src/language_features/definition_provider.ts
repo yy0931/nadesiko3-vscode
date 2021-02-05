@@ -1,5 +1,4 @@
 import * as vscode from "vscode"
-import { mockPlugins } from "../nako3_plugins"
 import { lex } from "../nadesiko3/nako3"
 import { LexErrorWithSourceMap } from "../nadesiko3/nako3"
 import { filterTokensByOffset } from "./utils"

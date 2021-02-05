@@ -1,65 +1,32 @@
-import * as vscode from 'vscode'
-import { createDeclarationFile, createParameterDeclaration, DeclarationFile } from '../document'
+import * as abs from './abstract_vscode'
+import { createParameterDeclaration, DeclarationFile } from '../document'
 import { LexErrorWithSourceMap } from '../nadesiko3/nako3'
 import { lex } from '../nadesiko3/nako3'
-import { mockPlugins } from '../nako3_plugins'
 import { filterVisibleTokens } from './utils'
 
-const tokenDecorationType = vscode.window.createTextEditorDecorationType({
-    after: {
-        contentText: '|',
-        color: 'transparent',
-        width: '1px',
-    },
-    dark: {
-        after: {
-            backgroundColor: '#737373',
-        }
-    },
-    light: {
-        after: {
-            backgroundColor: '#bbbbbb',
-        }
-    }
-})
+export default function getDecorations(document: abs.TextDocument, declarationFiles: DeclarationFile[], VSCodeRange: abs.TypeofVSCodeRange, Position: abs.TypeofPosition, MarkdownString: abs.TypeofMarkdownString, Uri: abs.TypeofUri, showLink: boolean): { tokenDecorations: abs.DecorationOptions[], josiDecorations: abs.DecorationOptions[] } {
+    const tokenDecorations = new Array<abs.DecorationOptions>()
+    const josiDecorations = new Array<abs.DecorationOptions>()
 
-const josiDecorationType = vscode.window.createTextEditorDecorationType({
-    textDecoration: "underline",
-})
-
-export default function updateDecorations(declarationFiles: DeclarationFile[]) {
-    const editor = vscode.window.activeTextEditor
-    if (editor === undefined) {
-        return
-    }
-    if (editor.document.languageId !== "nadesiko3") {
-        editor.setDecorations(tokenDecorationType, [])
-        editor.setDecorations(josiDecorationType, [])
-        return
-    }
-
-    const code = editor.document.getText()
+    const code = document.getText()
     const tokens = lex(code)
     if (tokens instanceof LexErrorWithSourceMap) {
-        editor.setDecorations(tokenDecorationType, [])
-        editor.setDecorations(josiDecorationType, [])
-        return
+        return { tokenDecorations, josiDecorations }
     }
 
     // トークンの区切れ目を表示する
-    if (vscode.workspace.getConfiguration("nadesiko3").get("showTokenDecorations")) {
-        const tokenDecorations = new Array<vscode.DecorationOptions>()
-        let prevDecorationPos = new vscode.Position(0, 0)
+    {
+        let prevDecorationPos = new Position(0, 0)
         for (const token of filterVisibleTokens([...tokens.commentTokens, ...tokens.tokens])) {
-            const start = editor.document.positionAt(token.startOffset)
-            const end = editor.document.positionAt(token.endOffset)
+            const start = document.positionAt(token.startOffset)
+            const end = document.positionAt(token.endOffset)
             const text = code.slice(token.startOffset, token.endOffset)
             if (text.trim() === "") {
                 continue
             }
 
             // hoverMessage を作る
-            let hoverMessage = new vscode.MarkdownString("")
+            let hoverMessage = new MarkdownString()
             if (token.type === "func" && (token.value as string) in tokens.funclist && tokens.funclist[token.value as string].type === "func") {
                 const fn = tokens.funclist[token.value as string]
                 if (fn.type !== "func") {
@@ -74,21 +41,23 @@ export default function updateDecorations(declarationFiles: DeclarationFile[]) {
                             if (d.token.startOffset === null) {
                                 declarationMarkdownLines.push(`${d.token.startOffset} ~ ${d.token.endOffset} 文字目`)
                             } else {
-                                const lineNumber = editor.document.lineAt(editor.document.positionAt(d.token.startOffset)).lineNumber
+                                const lineNumber = document.lineAt(document.positionAt(d.token.startOffset).line).lineNumber
                                 declarationMarkdownLines.push(`${lineNumber + 1}行目`)
                             }
                             break
                         } case "plugin": {
-                            const file = declarationFiles.find((file) => file.name === d.name + ".nako3")
-                            if (file === undefined) {
-                                console.error(`プラグインの宣言ファイル ${d.name}.nako3 が見つかりません。`)
-                                break
-                            }
-                            const lineNumber = file.nameToLineNumber.get(token.value as string)
-                            if (lineNumber !== undefined) {
-                                const uri = vscode.Uri.parse(`nadesiko3-plugin-declaration:${file.name}`)
-                                const label = d.name.replace(/([\[\]\<\>])/g, "\\$1")
-                                declarationMarkdownLines.push(`[${label}](${uri.toString()}#L${lineNumber + 1})`)
+                            if (showLink) {
+                                const file = declarationFiles.find((file) => file.name === d.name + ".nako3")
+                                if (file === undefined) {
+                                    console.error(`プラグインの宣言ファイル ${d.name}.nako3 が見つかりません。`)
+                                    break
+                                }
+                                const lineNumber = file.nameToLineNumber.get(token.value as string)
+                                if (lineNumber !== undefined) {
+                                    const uri = Uri.parse(`nadesiko3-plugin-declaration:${file.name}`)
+                                    const label = d.name.replace(/([\[\]\<\>])/g, "\\$1")
+                                    declarationMarkdownLines.push(`[${label}](${uri.toString()}#L${lineNumber + 1})`)
+                                }
                             }
                             break
                         }
@@ -106,31 +75,27 @@ export default function updateDecorations(declarationFiles: DeclarationFile[]) {
             // border-left
             if (!prevDecorationPos.isEqual(start)) {
                 tokenDecorations.push({
-                    range: new vscode.Range(start, start),
+                    range: new VSCodeRange(start, start),
                 })
             }
 
             // border-right
             tokenDecorations.push({
-                range: new vscode.Range(start, end),
+                range: new VSCodeRange(start, end),
                 hoverMessage
             })
             prevDecorationPos = end
         }
-        editor.setDecorations(tokenDecorationType, tokenDecorations)
-    } else {
-        editor.setDecorations(tokenDecorationType, [])
     }
 
     // 助詞を強調する
-    if (vscode.workspace.getConfiguration("nadesiko3").get("showJosiDecorations")) {
-        const josiDecorations = new Array<vscode.DecorationOptions>()
+    {
         for (const token of tokens.tokens) {
             if (token.endOffset === null || token.rawJosi === "" || token.josi === "") {
                 continue
             }
-            const start = editor.document.positionAt(token.endOffset - token.rawJosi.length)
-            const end = editor.document.positionAt(token.endOffset)
+            const start = document.positionAt(token.endOffset - token.rawJosi.length)
+            const end = document.positionAt(token.endOffset)
             const text = code.slice(token.endOffset - token.rawJosi.length, token.endOffset)
 
             // NOTE: 助詞「は~」の場合は「~」の部分が「〜」などにマッチするが、それらは全て1文字なため、
@@ -141,12 +106,10 @@ export default function updateDecorations(declarationFiles: DeclarationFile[]) {
             }
 
             josiDecorations.push({
-                range: new vscode.Range(start, end),
+                range: new VSCodeRange(start, end),
             })
         }
-
-        editor.setDecorations(josiDecorationType, josiDecorations)
-    } else {
-        editor.setDecorations(josiDecorationType, [])
     }
+
+    return { tokenDecorations, josiDecorations }
 }

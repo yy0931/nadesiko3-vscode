@@ -1,4 +1,4 @@
-import * as vscode from "vscode"
+import * as abs from "./abstract_vscode"
 import { TokenWithSourceMap } from "../nadesiko3/nako3"
 import { Token } from "../nadesiko3/nako_lexer"
 
@@ -33,16 +33,16 @@ export const filterTokensByOffset = (tokens: readonly TokenWithSourceMap[], offs
 }
 
 // rangeを行ごとに分割する
-export const splitRangeToLines = (document: vscode.TextDocument, start: vscode.Position, end: vscode.Position) => {
-    const ranges = new Array<vscode.Range>()
+export const splitRangeToLines = (document: abs.TextDocument, start: abs.Position, end: abs.Position, VSCodeRange: abs.TypeofVSCodeRange, Position: abs.TypeofPosition) => {
+    const ranges = new Array<abs.VSCodeRange>()
     if (start.line === end.line) {
-        ranges.push(new vscode.Range(start, end))
+        ranges.push(new VSCodeRange(start, end))
     } else {
         for (let y = start.line; y <= end.line; y++) {
             if (y === start.line) {
-                ranges.push(new vscode.Range(start, new vscode.Position(y, document.lineAt(y).text.length)))
+                ranges.push(new VSCodeRange(start, new Position(y, document.lineAt(y).text.length)))
             } else if (y === end.line) {
-                ranges.push(new vscode.Range(new vscode.Position(y, 0), end))
+                ranges.push(new VSCodeRange(new Position(y, 0), end))
             } else {
                 ranges.push(document.lineAt(y).range)
             }

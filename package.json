@@ -73,6 +73,14 @@
 					"when": "editorLangId == nadesiko3"
 				},
 				{
+					"command": "nadesiko3.showTokens",
+					"when": "editorLangId == nadesiko3"
+				},
+				{
+					"command": "nadesiko3.showSimplifiedTokens",
+					"when": "editorLangId == nadesiko3"
+				},
+				{
 					"command": "nadesiko3.showAst",
 					"when": "editorLangId == nadesiko3"
 				},
@@ -107,6 +115,11 @@
 			{
 				"command": "nadesiko3.showTokens",
 				"title": "Show Tokens",
+				"category": "Nadesiko3"
+			},
+			{
+				"command": "nadesiko3.showSimplifiedTokens",
+				"title": "Show Simplified Tokens",
 				"category": "Nadesiko3"
 			},
 			{

@@ -207,7 +207,34 @@ export function activate(context: vscode.ExtensionContext) {
 			if (result instanceof LexError) {
 				vscode.window.showErrorMessage("コンパイルエラー")
 			} else {
-				showVirtualDocument(util.inspect(result, { depth: null }), "ast", ".js", false, true)
+				showVirtualDocument(util.inspect(result.tokens, { depth: null }), "ast", ".js", false, true)
+			}
+		}),
+		vscode.commands.registerCommand('nadesiko3.showSimplifiedTokens', () => {
+			const editor = vscode.window.activeTextEditor
+			if (editor === undefined) {
+				vscode.window.showErrorMessage("ファイルが開かれていません")
+				return
+			}
+			const result = lex(editor.document.getText())
+			if (result instanceof LexError) {
+				vscode.window.showErrorMessage("コンパイルエラー")
+			} else {
+				for (const token of result.tokens) {
+					const obj = token as any
+					delete obj["file"]
+					delete obj["line"]
+					delete obj["column"]
+					delete obj["preprocessedCodeOffset"]
+					delete obj["preprocessedCodeLength"]
+					delete obj["startOffset"]
+					delete obj["endOffset"]
+					delete obj["rawJosi"]
+					if (typeof obj.meta === "object" && obj.meta !== null) {
+						delete obj.meta["declaration"]
+					}
+				}
+				showVirtualDocument(util.inspect(result.tokens, { depth: null }), "ast", ".js", false, true)
 			}
 		}),
 		vscode.commands.registerCommand('nadesiko3.showAst', () => {

@@ -10,7 +10,6 @@ const tokenDecorationType = vscode.window.createTextEditorDecorationType({
         contentText: '|',
         color: 'transparent',
         width: '1px',
-        textDecoration: "underline",
     },
     dark: {
         after: {
@@ -89,7 +88,7 @@ export default function updateDecorations(declarationFiles: DeclarationFile[]) {
                             if (lineNumber !== undefined) {
                                 const uri = vscode.Uri.parse(`nadesiko3-plugin-declaration:${file.name}`)
                                 const label = d.name.replace(/([\[\]\<\>])/g, "\\$1")
-                                declarationMarkdownLines.push(`[${label}](${uri}#L${lineNumber + 1})`)
+                                declarationMarkdownLines.push(`[${label}](${uri.toString()}#L${lineNumber + 1})`)
                             }
                             break
                         }

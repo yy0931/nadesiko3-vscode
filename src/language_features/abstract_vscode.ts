@@ -36,6 +36,7 @@ export interface TextLine {
 }
 
 export interface TextDocument {
+    uri: Uri
     lineAt(line: number): TextLine
     getText(range?: VSCodeRange): string
     positionAt(offset: number): Position

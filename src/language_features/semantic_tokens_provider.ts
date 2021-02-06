@@ -3,153 +3,144 @@ import { lex } from '../nadesiko3/nako3'
 import { LexError } from '../nadesiko3/nako_lexer'
 import { splitRangeToLines, filterVisibleTokens } from './utils'
 
-export default class SemanticTokensProvider implements abs.DocumentSemanticTokensProvider {
-    public readonly legend: abs.SemanticTokensLegend
+export default function provideDocumentSemanticTokens(
+    tokens: ReturnType<typeof lex>,
+    document: abs.TextDocument,
+    legend: abs.SemanticTokensLegend,
+    SemanticTokensBuilder: abs.TypeofSemanticTokensBuilder,
+    VSCodeRange: abs.TypeofVSCodeRange,
+    Position: abs.TypeofPosition,
+): abs.ProviderResult<abs.SemanticTokens> {
+    const tokensBuilder = new SemanticTokensBuilder(legend)
 
-    constructor(
-        private readonly SemanticTokensBuilder: abs.TypeofSemanticTokensBuilder,
-        SemanticTokensLegend: abs.TypeofSemanticTokensLegend,
-        private readonly VSCodeRange: abs.TypeofVSCodeRange,
-        private readonly Position: abs.TypeofPosition,
-    ) {
-        this.legend = new SemanticTokensLegend(
-            ["namespace", "class", "enum", "interface", "struct", "typeParameter", "type", "parameter", "variable", "property", "enumMember", "event", "function", "method", "macro", "label", "comment", "string", "keyword", "number", "regexp", "operator"],
-            ["declaration", "definition", "readonly", "static", "deprecated", "abstract", "async", "modification", "documentation", "defaultLibrary"],
-        )
+    const addSemanticToken = (start: abs.Position, end: abs.Position, tokenType: string, tokenModifiers?: string[] | undefined) => {
+        for (const range of splitRangeToLines(document, start, end, VSCodeRange, Position)) {
+            tokensBuilder.push(range, tokenType, tokenModifiers)
+        }
     }
-    provideDocumentSemanticTokens(document: abs.TextDocument): abs.ProviderResult<abs.SemanticTokens> {
-        const tokensBuilder = new this.SemanticTokensBuilder(this.legend)
 
-        const addSemanticToken = (start: abs.Position, end: abs.Position, tokenType: string, tokenModifiers?: string[] | undefined) => {
-            for (const range of splitRangeToLines(document, start, end, this.VSCodeRange, this.Position)) {
-                tokensBuilder.push(range, tokenType, tokenModifiers)
-            }
-        }
-
-        const code = document.getText()
-        const tokens = lex(code)
-        if (tokens instanceof LexError) {
-            return tokensBuilder.build()
-        }
-
-        for (const token of filterVisibleTokens([...tokens.commentTokens, ...tokens.tokens])) {
-            const start = document.positionAt(token.startOffset)
-            const end = document.positionAt(token.endOffset)
-            switch (token.type) {
-                case "line_comment":
-                case "range_comment":
-                    addSemanticToken(start, end, "comment", [])
-                    break
-                case "def_test":
-                case "def_func":
-                    addSemanticToken(start, end, "keyword", [])
-                    break
-                case "func":
-                    // 関数に「には」がついていれば、その部分を色付けする
-                    if (token.josi === "には" || token.josi === "は~") {
-                        const word = document.getText(new this.VSCodeRange(start, end))
-                        let josiPos: number
-                        if (token.josi === "には") {
-                            josiPos = word.lastIndexOf("には")
-                        } else {
-                            josiPos = word.lastIndexOf("は~")
-                            if (josiPos === -1) {
-                                josiPos = word.lastIndexOf("は〜")
-                            }
-                        }
-                        if (josiPos !== -1) {
-                            addSemanticToken(start, document.positionAt(token.startOffset + josiPos), "function", [])
-                            addSemanticToken(document.positionAt(token.startOffset + josiPos), end, "keyword", [])
-                            break
-                        }
-                    }
-                    if (token.isDefinition) {
-                        addSemanticToken(start, end, "function", ["declaration"])
-                    } else {
-                        addSemanticToken(start, end, "function", [])
-                    }
-                    break
-                case "number":
-                    addSemanticToken(start, end, "number", [])
-                    break
-                // 独立した助詞
-                case "とは":
-                    addSemanticToken(start, end, "macro", [])
-                    break
-                case "ならば":
-                case "でなければ":
-                    addSemanticToken(start, end, "keyword", [])
-                    break
-                // 制御構文
-                case "ここから":
-                case "ここまで":
-                case "もし":
-                case "違えば":
-                    addSemanticToken(start, end, "keyword", [])
-                    break
-                // 予約語
-                case "回":
-                case "間":
-                case "繰り返す":
-                case "反復":
-                case "抜ける":
-                case "続ける":
-                case "戻る":
-                case "先に":
-                case "次に":
-                case "代入":
-                case "逐次実行":
-                case "条件分岐":
-                case "取込":
-                case "エラー監視":
-                case "エラー":
-                    addSemanticToken(start, end, "keyword", [])
-                    break
-                case "変数":
-                    addSemanticToken(start, end, "variable", ["definition"])
-                    break
-                case "定数":
-                    // 変数ではないが、色付けのために変数として扱う
-                    addSemanticToken(start, end, "variable", ["readonly"])
-                    break
-                // 演算子
-                case "shift_r0":
-                case "shift_r":
-                case "shift_l":
-                case "gteq":
-                case "lteq":
-                case "noteq":
-                case "eq":
-                case "not":
-                case "gt":
-                case "lt":
-                case "and":
-                case "or":
-                case "@":
-                case "+":
-                case "-":
-                case "*":
-                case "/":
-                case "%":
-                case "^":
-                case "&":
-                    addSemanticToken(start, end, "operator", [])
-                    break
-                case "string":
-                case "string_ex":
-                    addSemanticToken(start, end, "string", [])
-                    break
-                case "word":
-                    if (token.value === "関数") {
-                        addSemanticToken(start, end, "macro", [])
-                    } else if (["それ", "そう"].includes(token.value as string)) {
-                        addSemanticToken(start, end, "macro", [])
-                    } else {
-                        addSemanticToken(start, end, "variable", [])
-                    }
-                    break
-            }
-        }
+    if (tokens instanceof LexError) {
         return tokensBuilder.build()
     }
+
+    for (const token of filterVisibleTokens([...tokens.commentTokens, ...tokens.tokens])) {
+        const start = document.positionAt(token.startOffset)
+        const end = document.positionAt(token.endOffset)
+        switch (token.type) {
+            case "line_comment":
+            case "range_comment":
+                addSemanticToken(start, end, "comment", [])
+                break
+            case "def_test":
+            case "def_func":
+                addSemanticToken(start, end, "keyword", [])
+                break
+            case "func":
+                // 関数に「には」がついていれば、その部分を色付けする
+                if (token.josi === "には" || token.josi === "は~") {
+                    const word = document.getText(new VSCodeRange(start, end))
+                    let josiPos: number
+                    if (token.josi === "には") {
+                        josiPos = word.lastIndexOf("には")
+                    } else {
+                        josiPos = word.lastIndexOf("は~")
+                        if (josiPos === -1) {
+                            josiPos = word.lastIndexOf("は〜")
+                        }
+                    }
+                    if (josiPos !== -1) {
+                        addSemanticToken(start, document.positionAt(token.startOffset + josiPos), "function", [])
+                        addSemanticToken(document.positionAt(token.startOffset + josiPos), end, "keyword", [])
+                        break
+                    }
+                }
+                if (token.isDefinition) {
+                    addSemanticToken(start, end, "function", ["declaration"])
+                } else {
+                    addSemanticToken(start, end, "function", [])
+                }
+                break
+            case "number":
+                addSemanticToken(start, end, "number", [])
+                break
+            // 独立した助詞
+            case "とは":
+                addSemanticToken(start, end, "macro", [])
+                break
+            case "ならば":
+            case "でなければ":
+                addSemanticToken(start, end, "keyword", [])
+                break
+            // 制御構文
+            case "ここから":
+            case "ここまで":
+            case "もし":
+            case "違えば":
+                addSemanticToken(start, end, "keyword", [])
+                break
+            // 予約語
+            case "回":
+            case "間":
+            case "繰り返す":
+            case "反復":
+            case "抜ける":
+            case "続ける":
+            case "戻る":
+            case "先に":
+            case "次に":
+            case "代入":
+            case "逐次実行":
+            case "条件分岐":
+            case "取込":
+            case "エラー監視":
+            case "エラー":
+                addSemanticToken(start, end, "keyword", [])
+                break
+            case "変数":
+                addSemanticToken(start, end, "variable", ["definition"])
+                break
+            case "定数":
+                // 変数ではないが、色付けのために変数として扱う
+                addSemanticToken(start, end, "variable", ["readonly"])
+                break
+            // 演算子
+            case "shift_r0":
+            case "shift_r":
+            case "shift_l":
+            case "gteq":
+            case "lteq":
+            case "noteq":
+            case "eq":
+            case "not":
+            case "gt":
+            case "lt":
+            case "and":
+            case "or":
+            case "@":
+            case "+":
+            case "-":
+            case "*":
+            case "/":
+            case "%":
+            case "^":
+            case "&":
+                addSemanticToken(start, end, "operator", [])
+                break
+            case "string":
+            case "string_ex":
+                addSemanticToken(start, end, "string", [])
+                break
+            case "word":
+                if (token.value === "関数") {
+                    addSemanticToken(start, end, "macro", [])
+                } else if (["それ", "そう"].includes(token.value as string)) {
+                    addSemanticToken(start, end, "macro", [])
+                } else {
+                    addSemanticToken(start, end, "variable", [])
+                }
+                break
+        }
+    }
+
+    return tokensBuilder.build()
 }

@@ -1,23 +1,25 @@
 import * as vscode from 'vscode'
-import NakoCompiler = require('nadesiko3/src/nako3')
-import { semanticTokensProvider, legend } from './language_features/semantic_tokens_provider'
-import updateDecorations from './language_features/decorations'
-import WebNakoServer from './web_nako_server'
-import { mockPlugins } from "./nako3_plugins"
+import jsBeutify = require("js-beautify")
 
-import pluginNode = require("nadesiko3/src/plugin_node")
-import pluginCSV = require("nadesiko3/src/plugin_csv")
 import * as fs from "fs"
 import * as path from "path"
+import * as util from 'util'
+
+import NakoCompiler = require('nadesiko3/src/nako3')
+import pluginNode = require("nadesiko3/src/plugin_node")
+import pluginCSV = require("nadesiko3/src/plugin_csv")
+import { lex, parse } from './nadesiko3/nako3'
+import { LexError } from './nadesiko3/nako_lexer'
+import { mockPlugins } from "./nako3_plugins"
+
+import WebNakoServer from './web_nako_server'
 import documentHighlightProvider from './language_features/document_highlight_provider'
 import codeLendsProvider from './language_features/code_lens'
-import updateDiagnostics from './language_features/diagnostics'
 import DefinitionProvider from './language_features/definition_provider'
 import { createDeclarationFile } from './document'
-import * as util from 'util'
-import { Ast, lex, parse } from './nadesiko3/nako3'
-import jsBeutify = require("js-beautify")
-import { LexError } from './nadesiko3/nako_lexer'
+import * as abs from "./language_features/abstract_vscode"
+import updateDiagnostics from "./language_features/diagnostics"
+import { LanguageFeatures } from './language_features'
 
 export function activate(context: vscode.ExtensionContext) {
 	const webNakoServer = new WebNakoServer(context.extensionPath)
@@ -59,10 +61,51 @@ export function activate(context: vscode.ExtensionContext) {
 		return url
 	}
 
+	const VSCodeRange = vscode.Range as unknown as abs.TypeofVSCodeRange
+
 	// 各プラグインの宣言ファイルを作る
 	const declarationFiles = Object.entries(mockPlugins).map(([name, plugin]) => createDeclarationFile(name, plugin))
 
-	updateDecorations(declarationFiles)
+	const tokenDecorationType = vscode.window.createTextEditorDecorationType({
+		after: {
+			contentText: '|',
+			color: 'transparent',
+			width: '1px',
+		},
+		dark: {
+			after: {
+				backgroundColor: '#737373',
+			}
+		},
+		light: {
+			after: {
+				backgroundColor: '#bbbbbb',
+			}
+		}
+	})
+
+	const josiDecorationType = vscode.window.createTextEditorDecorationType({
+		textDecoration: "underline",
+	})
+
+	const languageFeatures = new LanguageFeatures(vscode.SemanticTokensBuilder, vscode.SemanticTokensLegend, declarationFiles, vscode.MarkdownString, vscode.Uri, true, VSCodeRange, vscode.Position)
+
+	const updateDecorations = async () => {
+		const editor = vscode.window.activeTextEditor
+		if (editor === undefined) {
+			return
+		}
+		if (editor.document.languageId !== "nadesiko3") {
+			editor.setDecorations(tokenDecorationType, [])
+			editor.setDecorations(josiDecorationType, [])
+			return
+		}
+		const decorations = await languageFeatures.getDecorations(editor.document)
+		editor.setDecorations(tokenDecorationType, decorations.tokenDecorations as vscode.DecorationOptions[])
+		editor.setDecorations(josiDecorationType, decorations.josiDecorations as vscode.DecorationOptions[])
+	}
+
+	updateDecorations()
 	setDiagnosticsTimeout()
 
 	context.subscriptions.push(
@@ -85,19 +128,19 @@ export function activate(context: vscode.ExtensionContext) {
 			}
 		}),
 		vscode.languages.registerCodeLensProvider(selector, codeLendsProvider),
-		vscode.languages.registerDocumentSemanticTokensProvider(selector, semanticTokensProvider, legend),
+		vscode.languages.registerDocumentSemanticTokensProvider(selector, languageFeatures, languageFeatures.legend),
 		vscode.languages.registerDefinitionProvider(selector, new DefinitionProvider(declarationFiles)),
 		vscode.languages.registerDocumentHighlightProvider(selector, documentHighlightProvider),
 		vscode.window.onDidChangeActiveTextEditor((editor) => {
-			updateDecorations(declarationFiles)
+			updateDecorations()
 			setDiagnosticsTimeout()
 		}),
 		vscode.workspace.onDidChangeTextDocument((event) => {
-			updateDecorations(declarationFiles)
+			updateDecorations()
 			setDiagnosticsTimeout()
 		}),
 		vscode.workspace.onDidOpenTextDocument((document) => {
-			updateDecorations(declarationFiles)
+			updateDecorations()
 			setDiagnosticsTimeout()
 		}),
 		vscode.workspace.onDidCloseTextDocument((doc) => {

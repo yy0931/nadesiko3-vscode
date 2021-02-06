@@ -4,3 +4,6 @@ node_modules
 *.vsix
 .yarn-error.log
 yarn-error.log
+todo.md
+parser.md
+log.txt

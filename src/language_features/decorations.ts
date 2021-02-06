@@ -4,12 +4,11 @@ import { LexErrorWithSourceMap } from '../nadesiko3/nako3'
 import { lex } from '../nadesiko3/nako3'
 import { filterVisibleTokens } from './utils'
 
-export default function getDecorations(document: abs.TextDocument, declarationFiles: DeclarationFile[], VSCodeRange: abs.TypeofVSCodeRange, Position: abs.TypeofPosition, MarkdownString: abs.TypeofMarkdownString, Uri: abs.TypeofUri, showLink: boolean): { tokenDecorations: abs.DecorationOptions[], josiDecorations: abs.DecorationOptions[] } {
+export default function getDecorations(tokens: ReturnType<typeof lex>, document: abs.TextDocument, declarationFiles: DeclarationFile[], VSCodeRange: abs.TypeofVSCodeRange, Position: abs.TypeofPosition, MarkdownString: abs.TypeofMarkdownString, Uri: abs.TypeofUri, showLink: boolean): { tokenDecorations: abs.DecorationOptions[], josiDecorations: abs.DecorationOptions[] } {
     const tokenDecorations = new Array<abs.DecorationOptions>()
     const josiDecorations = new Array<abs.DecorationOptions>()
 
     const code = document.getText()
-    const tokens = lex(code)
     if (tokens instanceof LexErrorWithSourceMap) {
         return { tokenDecorations, josiDecorations }
     }

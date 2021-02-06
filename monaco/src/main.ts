@@ -88,13 +88,12 @@ const editor = monaco.editor.create(document.getElementById("container")!, {
 })
 
 let oldDecorationIndices = new Array<string>()
-const updateDecorations = async () => {
+languageFeatures.decorate = (document, newDecorations) => {
     const model = editor.getModel()
     if (model === null) {
         return
     }
 
-    const newDecorations = await languageFeatures.getDecorations(new vscode.TextDocument(model))
     const diff = new Array<monacoType.editor.IModelDeltaDecoration>()
     for (const d of newDecorations.josiDecorations) {
         diff.push({
@@ -123,6 +122,9 @@ const updateDecorations = async () => {
 
     oldDecorationIndices = editor.deltaDecorations(oldDecorationIndices, diff)
 }
-updateDecorations().catch((err) => { console.error(err) })
 
-editor.getModel()?.onDidChangeContent((event) => { updateDecorations().catch((err) => { console.error(err) }) })
+const model = editor.getModel()
+if (model !== null) {
+    languageFeatures.onDidChange(new vscode.TextDocument(model))
+    model.onDidChangeContent((event) => { languageFeatures.onDidChange(new vscode.TextDocument(model)) })
+}

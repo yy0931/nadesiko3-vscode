@@ -4,7 +4,7 @@ import { lex } from "../nadesiko3/nako3"
 import provideDocumentSemanticTokens from "./semantic_tokens_provider"
 import { DeclarationFile } from "../document"
 
-export class LanguageFeatures implements abs.DocumentSemanticTokensProvider {
+export default class LanguageFeatures implements abs.DocumentSemanticTokensProvider {
     private requests = new Map<string, { code: string, callbacks: (() => void)[] }[]>()
     private result = new Map<string, { code: string, tokens: ReturnType<typeof lex>, semanticTokens: ReturnType<typeof provideDocumentSemanticTokens>, decorations: ReturnType<typeof getDecorations> }>()
 

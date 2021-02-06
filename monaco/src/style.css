@@ -1,0 +1,10 @@
+.josi-decoration {
+    text-decoration: underline;
+}
+.token-decoration::after {
+    display: inline-block;
+    content: "|";
+    color: transparent;
+    width: 1px;
+    background-color: #bbbbbb; /* light theme */
+}

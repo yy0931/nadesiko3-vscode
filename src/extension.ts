@@ -19,7 +19,7 @@ import DefinitionProvider from './language_features/definition_provider'
 import { createDeclarationFile } from './document'
 import * as abs from "./language_features/abstract_vscode"
 import updateDiagnostics from "./language_features/diagnostics"
-import { LanguageFeatures } from './language_features'
+import LanguageFeatures from './language_features'
 
 export function activate(context: vscode.ExtensionContext) {
 	const webNakoServer = new WebNakoServer(context.extensionPath)
@@ -105,7 +105,7 @@ export function activate(context: vscode.ExtensionContext) {
 		editor.setDecorations(josiDecorationType, decorations.josiDecorations as vscode.DecorationOptions[])
 	}
 
-	updateDecorations()
+	updateDecorations().catch((err) => { console.error(err) })
 	setDiagnosticsTimeout()
 
 	context.subscriptions.push(
@@ -132,15 +132,15 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.languages.registerDefinitionProvider(selector, new DefinitionProvider(declarationFiles)),
 		vscode.languages.registerDocumentHighlightProvider(selector, documentHighlightProvider),
 		vscode.window.onDidChangeActiveTextEditor((editor) => {
-			updateDecorations()
+			updateDecorations().catch((err) => { console.error(err) })
 			setDiagnosticsTimeout()
 		}),
 		vscode.workspace.onDidChangeTextDocument((event) => {
-			updateDecorations()
+			updateDecorations().catch((err) => { console.error(err) })
 			setDiagnosticsTimeout()
 		}),
 		vscode.workspace.onDidOpenTextDocument((document) => {
-			updateDecorations()
+			updateDecorations().catch((err) => { console.error(err) })
 			setDiagnosticsTimeout()
 		}),
 		vscode.workspace.onDidCloseTextDocument((doc) => {

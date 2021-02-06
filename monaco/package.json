@@ -1,0 +1,26 @@
+{
+  "name": "nadesiko3-monaco",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "yy0931 <54441600+yy0931@users.noreply.github.com>",
+  "license": "MIT",
+  "scripts": {
+    "start": "rimraf dist && npm run build-monaco && parcel src/index.html",
+    "build": "rimraf dist && npm run build-monaco && parcel build src/index.html",
+    "build-monaco": "npm run build-json && npm run build-css && npm run build-html && npm run build-ts && npm run build-worker",
+    "build-json": "parcel build node_modules/monaco-editor/esm/vs/language/json/json.worker.js --no-source-maps",
+    "build-css": "parcel build node_modules/monaco-editor/esm/vs/language/css/css.worker.js --no-source-maps",
+    "build-html": "parcel build node_modules/monaco-editor/esm/vs/language/html/html.worker.js --no-source-maps",
+    "build-ts": "parcel build node_modules/monaco-editor/esm/vs/language/typescript/ts.worker.js --no-source-maps",
+    "build-worker": "parcel build node_modules/monaco-editor/esm/vs/editor/editor.worker.js --no-source-maps"
+  },
+  "dependencies": {
+    "monaco-editor": "^0.22.3",
+    "nadesiko3": "^3.1.16",
+    "regenerator-runtime": "^0.13.7"
+  },
+  "devDependencies": {
+    "parcel": "^1.12.4",
+    "typescript": "^4.1.3"
+  }
+}

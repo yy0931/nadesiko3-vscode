@@ -12,7 +12,14 @@
     "build-css": "parcel build node_modules/monaco-editor/esm/vs/language/css/css.worker.js --no-source-maps",
     "build-html": "parcel build node_modules/monaco-editor/esm/vs/language/html/html.worker.js --no-source-maps",
     "build-ts": "parcel build node_modules/monaco-editor/esm/vs/language/typescript/ts.worker.js --no-source-maps",
-    "build-worker": "parcel build node_modules/monaco-editor/esm/vs/editor/editor.worker.js --no-source-maps"
+    "build-worker": "parcel build node_modules/monaco-editor/esm/vs/editor/editor.worker.js --no-source-maps",
+    "gh-build": "rimraf dist && npm run build-monaco && parcel build --public-url /nadesiko3-vscode src/index.html",
+    "gh-build-monaco": "npm run build-json && npm run build-css && npm run build-html && npm run build-ts && npm run build-worker",
+    "gh-build-json": "parcel build --public-url /nadesiko3-vscode node_modules/monaco-editor/esm/vs/language/json/json.worker.js --no-source-maps",
+    "gh-build-css": "parcel build --public-url /nadesiko3-vscode node_modules/monaco-editor/esm/vs/language/css/css.worker.js --no-source-maps",
+    "gh-build-html": "parcel build --public-url /nadesiko3-vscode node_modules/monaco-editor/esm/vs/language/html/html.worker.js --no-source-maps",
+    "gh-build-ts": "parcel build --public-url /nadesiko3-vscode node_modules/monaco-editor/esm/vs/language/typescript/ts.worker.js --no-source-maps",
+    "gh-build-worker": "parcel build --public-url /nadesiko3-vscode node_modules/monaco-editor/esm/vs/editor/editor.worker.js --no-source-maps",
   },
   "dependencies": {
     "monaco-editor": "^0.22.3",

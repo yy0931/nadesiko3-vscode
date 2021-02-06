@@ -9,6 +9,7 @@ export default class LanguageFeatures implements abs.DocumentSemanticTokensProvi
     private result = new Map<string, { code: string, tokens: ReturnType<typeof lex>, semanticTokens: ReturnType<typeof provideDocumentSemanticTokens>, decorations: ReturnType<typeof getDecorations> }>()
 
     public readonly legend: abs.SemanticTokensLegend
+    public decorate = (document: abs.TextDocument, decorations: ReturnType<typeof getDecorations>) => { }
 
     constructor(
         private readonly SemanticTokensBuilder: abs.TypeofSemanticTokensBuilder,
@@ -25,7 +26,7 @@ export default class LanguageFeatures implements abs.DocumentSemanticTokensProvi
             ["declaration", "definition", "readonly", "static", "deprecated", "abstract", "async", "modification", "documentation", "defaultLibrary"],
         )
     }
-    private async onDidChange(document: abs.TextDocument): Promise<void> {
+    async onDidChange(document: abs.TextDocument): Promise<void> {
         const uri = document.uri.toString()
         if (!this.requests.has(uri)) {
             this.requests.set(uri, [])
@@ -55,10 +56,16 @@ export default class LanguageFeatures implements abs.DocumentSemanticTokensProvi
                 // 最新のリクエストを処理する
                 const task = requests[requests.length - 1]
                 const code = task.code
-                const tokens = lex(code)
-                const semanticTokens = provideDocumentSemanticTokens(tokens, document, this.legend, this.SemanticTokensBuilder, this.VSCodeRange, this.Position)
-                const decorations = getDecorations(tokens, document, this.declarationFiles, this.VSCodeRange, this.Position, this.MarkdownString, this.Uri, this.showLink)
-                this.result.set(uri, { code, tokens, semanticTokens, decorations })
+
+                if (!(this.result.has(uri) && this.result.get(uri)!.code === code)) {
+                    const tokens = lex(code)
+                    const semanticTokens = provideDocumentSemanticTokens(tokens, document, this.legend, this.SemanticTokensBuilder, this.VSCodeRange, this.Position)
+                    const decorations = getDecorations(tokens, document, this.declarationFiles, this.VSCodeRange, this.Position, this.MarkdownString, this.Uri, this.showLink)
+                    this.result.set(uri, { code, tokens, semanticTokens, decorations })
+
+                    // エディタに反映する
+                    this.decorate(document, decorations)
+                }
 
                 // 全てのリクエストを終了させる
                 for (const task of requests) {
@@ -71,10 +78,6 @@ export default class LanguageFeatures implements abs.DocumentSemanticTokensProvi
                 resolve()
             }, 35)
         })
-    }
-    async getDecorations(document: abs.TextDocument) {
-        await this.onDidChange(document)
-        return this.result.get(document.uri.toString())!.decorations
     }
     async provideDocumentSemanticTokens(document: abs.TextDocument): Promise<abs.SemanticTokens> {
         await this.onDidChange(document)

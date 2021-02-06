@@ -90,7 +90,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	const languageFeatures = new LanguageFeatures(vscode.SemanticTokensBuilder, vscode.SemanticTokensLegend, declarationFiles, vscode.MarkdownString, vscode.Uri, true, VSCodeRange, vscode.Position)
 
-	const updateDecorations = async () => {
+	languageFeatures.decorate = (document, decorations) => {
 		const editor = vscode.window.activeTextEditor
 		if (editor === undefined) {
 			return
@@ -100,12 +100,16 @@ export function activate(context: vscode.ExtensionContext) {
 			editor.setDecorations(josiDecorationType, [])
 			return
 		}
-		const decorations = await languageFeatures.getDecorations(editor.document)
 		editor.setDecorations(tokenDecorationType, decorations.tokenDecorations as vscode.DecorationOptions[])
 		editor.setDecorations(josiDecorationType, decorations.josiDecorations as vscode.DecorationOptions[])
 	}
 
-	updateDecorations().catch((err) => { console.error(err) })
+	{
+		const editor = vscode.window.activeTextEditor
+		if (editor !== undefined) {
+			languageFeatures.onDidChange(editor.document)
+		}
+	}
 	setDiagnosticsTimeout()
 
 	context.subscriptions.push(
@@ -132,15 +136,26 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.languages.registerDefinitionProvider(selector, new DefinitionProvider(declarationFiles)),
 		vscode.languages.registerDocumentHighlightProvider(selector, documentHighlightProvider),
 		vscode.window.onDidChangeActiveTextEditor((editor) => {
-			updateDecorations().catch((err) => { console.error(err) })
+			if (editor === undefined || editor?.document.languageId !== "nadesiko3") {
+				return
+			}
+			languageFeatures.onDidChange(editor.document)
 			setDiagnosticsTimeout()
 		}),
 		vscode.workspace.onDidChangeTextDocument((event) => {
-			updateDecorations().catch((err) => { console.error(err) })
+			const editor = vscode.window.activeTextEditor
+			if (editor === undefined || editor.document.languageId !== "nadesiko3") {
+				return
+			}
+			languageFeatures.onDidChange(editor.document)
 			setDiagnosticsTimeout()
 		}),
 		vscode.workspace.onDidOpenTextDocument((document) => {
-			updateDecorations().catch((err) => { console.error(err) })
+			const editor = vscode.window.activeTextEditor
+			if (editor === undefined || editor.document.languageId !== "nadesiko3") {
+				return
+			}
+			languageFeatures.onDidChange(editor.document)
 			setDiagnosticsTimeout()
 		}),
 		vscode.workspace.onDidCloseTextDocument((doc) => {

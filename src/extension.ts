@@ -90,14 +90,17 @@ export function activate(context: vscode.ExtensionContext) {
 
 	const languageFeatures = new LanguageFeatures(vscode.SemanticTokensBuilder, vscode.SemanticTokensLegend, declarationFiles, vscode.MarkdownString, vscode.Uri, true, VSCodeRange, vscode.Position)
 
+	const clearDecorations = (editor: vscode.TextEditor) => {
+		editor.setDecorations(tokenDecorationType, [])
+		editor.setDecorations(josiDecorationType, [])
+	}
 	languageFeatures.decorate = (document, decorations) => {
 		const editor = vscode.window.activeTextEditor
 		if (editor === undefined) {
 			return
 		}
 		if (editor.document.languageId !== "nadesiko3") {
-			editor.setDecorations(tokenDecorationType, [])
-			editor.setDecorations(josiDecorationType, [])
+			clearDecorations(editor)
 			return
 		}
 		editor.setDecorations(tokenDecorationType, decorations.tokenDecorations as vscode.DecorationOptions[])
@@ -136,24 +139,33 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.languages.registerDefinitionProvider(selector, new DefinitionProvider(declarationFiles)),
 		vscode.languages.registerDocumentHighlightProvider(selector, documentHighlightProvider),
 		vscode.window.onDidChangeActiveTextEditor((editor) => {
-			if (editor === undefined || editor?.document.languageId !== "nadesiko3") {
+			if (editor === undefined) {
 				return
+			}
+			if (editor.document.languageId !== "nadesiko3") {
+				clearDecorations(editor)
 			}
 			languageFeatures.onDidChange(editor.document)
 			setDiagnosticsTimeout()
 		}),
 		vscode.workspace.onDidChangeTextDocument((event) => {
 			const editor = vscode.window.activeTextEditor
-			if (editor === undefined || editor.document.languageId !== "nadesiko3") {
+			if (editor === undefined) {
 				return
+			}
+			if (editor.document.languageId !== "nadesiko3") {
+				clearDecorations(editor)
 			}
 			languageFeatures.onDidChange(editor.document)
 			setDiagnosticsTimeout()
 		}),
 		vscode.workspace.onDidOpenTextDocument((document) => {
 			const editor = vscode.window.activeTextEditor
-			if (editor === undefined || editor.document.languageId !== "nadesiko3") {
+			if (editor === undefined) {
 				return
+			}
+			if (editor.document.languageId !== "nadesiko3") {
+				clearDecorations(editor)
 			}
 			languageFeatures.onDidChange(editor.document)
 			setDiagnosticsTimeout()

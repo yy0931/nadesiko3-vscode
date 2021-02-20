@@ -74,16 +74,22 @@ export function activate(context: vscode.ExtensionContext) {
 	nako3.addPluginObject('PluginNode', PluginNode)
 
 	// 「表示」の動作を上書き
-	nako3.setFunc("表示", [["と", "を", "の"]], (s: any, sys: any) => {
-		if (panel === null) {
-			return
-		}
-		// 文字列の場合はutil.inspectに掛けると''で囲まれてしまうため、そのまま送信
-		if (typeof s === "string") {
-			panel.webview.postMessage({ type: "out", line: s })
-			return
-		}
-		panel.webview.postMessage({ type: "out", line: util.inspect(s, { depth: null }) })
+	nako3.addPluginObject("nadesiko3-vscode", {
+		"表示": {
+			type: "func",
+			josi: [["と", "を", "の"]],
+			fn: (s: any, sys: any) => {
+				if (panel === null) {
+					return
+				}
+				// 文字列の場合はutil.inspectに掛けると''で囲まれてしまうため、そのまま送信
+				if (typeof s === "string") {
+					panel.webview.postMessage({ type: "out", line: s })
+					return
+				}
+				panel.webview.postMessage({ type: "out", line: util.inspect(s, { depth: null }) })
+			}
+		},
 	})
 
 	const diagnosticCollection = vscode.languages.createDiagnosticCollection("nadesiko3")
@@ -138,17 +144,33 @@ export function activate(context: vscode.ExtensionContext) {
 		diagnosticCollection,
 		vscode.window.onDidChangeActiveTextEditor(() => { onChange() }),
 		vscode.window.onDidChangeTextEditorOptions(() => { onChange() }),
+		vscode.workspace.onDidOpenTextDocument(() => { onChange() }),
 		vscode.workspace.onDidCloseTextDocument((doc) => { diagnosticCollection.delete(doc.uri) }),
 		vscode.workspace.onDidChangeConfiguration(() => { onChange() }),
 		vscode.workspace.onDidChangeTextDocument((e) => { onChange() }),
 		vscode.languages.registerCompletionItemProvider(selector, {
 			provideCompletionItems(document, position, token, context) {
-				return LanguageFeatures.getSnippets(document.getText()).map((item) => {
-					const snippet = new vscode.CompletionItem(item.caption, vscode.CompletionItemKind.Snippet)
-					snippet.detail = item.meta
-					snippet.insertText = new vscode.SnippetString(item.snippet)
-					return snippet
-				})
+				onChange()
+				if (backgroundTokenizer === null) {
+					return []
+				}
+				const prefix = LanguageFeatures.getCompletionPrefix(document.lineAt(position.line).text, nako3)
+				return [
+					...LanguageFeatures.getSnippets(document.getText()).map((item) => {
+						const snippet = new vscode.CompletionItem(item.caption, vscode.CompletionItemKind.Snippet)
+						snippet.detail = item.meta
+						snippet.insertText = new vscode.SnippetString(item.snippet)
+						return snippet
+					}),
+					...LanguageFeatures.getCompletionItems(position.line, prefix, nako3, backgroundTokenizer.v).map((item) => {
+						const completion = new vscode.CompletionItem(item.caption, item.meta === '変数' ? vscode.CompletionItemKind.Variable : vscode.CompletionItemKind.Function)
+						completion.insertText = item.value
+						completion.detail = item.meta
+						completion.filterText = item.value
+						completion.range = new vscode.Range(position.line, position.character - prefix.length, position.line, position.character)
+						return completion
+					})
+				]
 			}
 		}),
 		vscode.languages.registerDocumentSemanticTokensProvider(selector, {

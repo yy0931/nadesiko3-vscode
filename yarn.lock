@@ -2846,9 +2846,9 @@ nadesiko3-sqlite3sync@0.0.1:
   dependencies:
     sqlite-sync "^0.3.9"
 
-"nadesiko3@git+https://github.com/yy0931/nadesiko3#aedf76de23dcea3f5b69ea02c51fef20e8c152fe":
+"nadesiko3@git+https://github.com/yy0931/nadesiko3#23e621c3936e80863f546790a5c38e588089b2ec":
   version "3.1.18"
-  resolved "git+https://github.com/yy0931/nadesiko3#aedf76de23dcea3f5b69ea02c51fef20e8c152fe"
+  resolved "git+https://github.com/yy0931/nadesiko3#23e621c3936e80863f546790a5c38e588089b2ec"
   dependencies:
     body-parser "^1.19.0"
     browserslist "^4.8.7"

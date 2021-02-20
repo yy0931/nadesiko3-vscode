@@ -152,6 +152,6 @@
 		"@types/vscode": "^1.53.0",
 		"js-beautify": "^1.13.5",
 		"json5": "^2.2.0",
-		"nadesiko3": "git+https://github.com/yy0931/nadesiko3#aedf76de23dcea3f5b69ea02c51fef20e8c152fe"
+		"nadesiko3": "git+https://github.com/yy0931/nadesiko3#23e621c3936e80863f546790a5c38e588089b2ec"
 	}
 }

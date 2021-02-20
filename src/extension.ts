@@ -1,6 +1,10 @@
-import * as vscode from 'vscode'
-import { LanguageFeatures, BackgroundTokenizer, AceDocument, TokenType, EditorMarkers } from 'nadesiko3/src/wnako3_editor'
-import * as NakoCompiler from 'nadesiko3/src/nako3'
+import * as vscode from "vscode"
+import { LanguageFeatures, BackgroundTokenizer, AceDocument, TokenType, EditorMarkers } from "nadesiko3/src/wnako3_editor"
+import * as NakoCompiler from "nadesiko3/src/nako3"
+import * as path from "path"
+import * as fs from "fs"
+import * as util from "util"
+import * as PluginNode from "nadesiko3/src/plugin_node"
 
 class AceRange {
 	constructor(
@@ -17,7 +21,7 @@ class AceRange {
 class DocumentAdapter implements AceDocument {
 	constructor(private readonly editor: vscode.TextEditor) { }
 	getLine(row: number) { return this.editor.document.lineAt(row).text }
-	getAllLines() { return this.editor.document.getText().split('\n') }
+	getAllLines() { return this.editor.document.getText().split("\n") }
 	getLength() { return this.editor.document.lineCount }
 	insertInLine(position: { row: number, column: number }, text: string) {
 		this.editor.edit((builder) => { builder.insert(new vscode.Position(position.row, position.column), text) })
@@ -62,10 +66,25 @@ const mapTokenType = (type: TokenType): [VSCodeTokenType, string[]] | null => {
 }
 
 let backgroundTokenizer: { v: BackgroundTokenizer, editor: vscode.TextEditor, listeners: (() => void)[], waitTokenUpdate: () => Promise<void> } | null = null
+let panel: vscode.WebviewPanel | null = null
 
 export function activate(context: vscode.ExtensionContext) {
 	const selector: vscode.DocumentSelector = { language: "nadesiko3", scheme: undefined }
 	const nako3 = new NakoCompiler()
+	nako3.addPluginObject('PluginNode', PluginNode)
+
+	// 「表示」の動作を上書き
+	nako3.setFunc("表示", [["と", "を", "の"]], (s: any, sys: any) => {
+		if (panel === null) {
+			return
+		}
+		// 文字列の場合はutil.inspectに掛けると''で囲まれてしまうため、そのまま送信
+		if (typeof s === "string") {
+			panel.webview.postMessage({ type: "out", line: s })
+			return
+		}
+		panel.webview.postMessage({ type: "out", line: util.inspect(s, { depth: null }) })
+	})
 
 	const diagnosticCollection = vscode.languages.createDiagnosticCollection("nadesiko3")
 
@@ -86,7 +105,7 @@ export function activate(context: vscode.ExtensionContext) {
 			backgroundTokenizer.listeners.forEach((f) => f())
 			backgroundTokenizer.listeners = []
 		}
-		if (editor.document.languageId !== 'nadesiko3') {
+		if (editor.document.languageId !== "nadesiko3") {
 			diagnosticCollection.delete(editor.document.uri)
 			return
 		}
@@ -145,9 +164,77 @@ export function activate(context: vscode.ExtensionContext) {
 				return tokensBuilder.build()
 			}
 		}, legend),
+		vscode.languages.registerCodeLensProvider(selector, {
+			provideCodeLenses: (
+				document: vscode.TextDocument,
+				token: vscode.CancellationToken,
+			): vscode.ProviderResult<vscode.CodeLens[]> => {
+				if (document.getText().length <= 2) {
+					return []
+				}
+				return [
+					new vscode.CodeLens(
+						new vscode.Range(0, 0, 0, 0),
+						{
+							title: "$(play) ファイルを実行",
+							command: "nadesiko3.runActiveFile",
+						},
+					),
+				];
+			}
+		}),
+		vscode.commands.registerCommand("nadesiko3.runActiveFile", async () => {
+			const editor = vscode.window.activeTextEditor
+			if (editor === undefined) {
+				vscode.window.showErrorMessage("ファイルが開かれていません")
+				return
+			}
+			if (panel === null) {
+				panel = vscode.window.createWebviewPanel("nadesiko3Output", "なでしこv3: プログラムの出力", vscode.ViewColumn.Beside, {
+					enableScripts: true,
+					localResourceRoots: [vscode.Uri.file(path.join(context.extensionPath, "static"))]
+				})
+				const staticDir = path.join(context.extensionPath, "static")
+				panel.webview.html = fs.readFileSync(path.join(staticDir, "webview.html")).toString()
+					.replace("{index.css}", panel.webview.asWebviewUri(vscode.Uri.file(path.join(staticDir, "index.css"))).toString())
+					.replace("{webview.js}", panel.webview.asWebviewUri(vscode.Uri.file(path.join(staticDir, "webview.js"))).toString())
+					.replace("{index.js}", panel.webview.asWebviewUri(vscode.Uri.file(path.join(staticDir, "index.js"))).toString())
+
+				panel.onDidDispose(() => { panel = null }, null, context.subscriptions)
+			} else {
+				panel.reveal(vscode.ViewColumn.Beside)
+			}
+
+			try {
+				const code = editor.document.getText()
+				const fileName = editor.document.fileName
+				await nako3.loadDependencies(code, fileName, "", {
+					resolvePath: (name) => {
+						if (path.isAbsolute(name)) {
+							name = path.resolve(name)
+						} else {
+							name = path.resolve(path.join(context.extensionPath, name))
+						}
+						if (/\.js(\.txt)?$/.test(name) || /^[^\.]*$/.test(name)) {
+							return { filePath: name, type: 'js' }
+						}
+						if (/\.nako3?(\.txt)?$/.test(name)) {
+							return { filePath: name, type: 'nako3' }
+						}
+						return { filePath: name, type: 'invalid' }
+					},
+					readNako3: (name) => ({ sync: true, value: fs.readFileSync(name).toString() }),
+					readJs: (name) => ({ sync: true, value: require(name) }),
+				})
+				nako3.runReset(code, fileName)
+			} catch (e) {
+				panel.webview.postMessage({ type: "err", line: e.message })
+			}
+		}),
 	)
 }
 
 export function deactivate() {
 	backgroundTokenizer?.v.dispose()
+	panel?.dispose()
 }

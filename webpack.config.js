@@ -8,11 +8,14 @@
 'use strict';
 
 const path = require('path');
+const FilterWarningsPlugin = require('webpack-filter-warnings-plugin');
 
 /**@type {import('webpack').Configuration}*/
 const config = {
     target: 'node', // vscode extensions run in a Node.js-context 📖 -> https://webpack.js.org/configuration/node/
-
+    stats: {
+        errorDetails: true,
+    },
     entry: './src/extension.ts', // the entry point of this extension, 📖 -> https://webpack.js.org/configuration/entry-context/
     output: { // the bundle is stored in the 'dist' folder (check package.json), 📖 -> https://webpack.js.org/configuration/output/
         path: path.resolve(__dirname, 'dist'),
@@ -41,6 +44,13 @@ const config = {
             }]
         }]
     },
+    plugins: [
+        // webviewで使うファイルを文字列で指定していることに由来する警告を消す
+        //@ts-ignore
+        new FilterWarningsPlugin({
+            exclude: /Critical dependency: the request of a dependency is an expression/,
+        }),
+    ],
 }
 
 module.exports = config;

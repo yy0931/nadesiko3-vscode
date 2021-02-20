@@ -1,5 +1,5 @@
 import * as vscode from 'vscode'
-import { LanguageFeatures, BackgroundTokenizer, AceDocument, TokenType } from 'nadesiko3/src/wnako3_editor'
+import { LanguageFeatures, BackgroundTokenizer, AceDocument, TokenType, EditorMarkers } from 'nadesiko3/src/wnako3_editor'
 import * as NakoCompiler from 'nadesiko3/src/nako3'
 
 class AceRange {
@@ -61,21 +61,33 @@ const mapTokenType = (type: TokenType): [VSCodeTokenType, string[]] | null => {
 	}
 }
 
-let backgroundTokenizer: { v: BackgroundTokenizer, editor: vscode.TextEditor, waitTokenUpdate: () => Promise<void> } | null = null
+let backgroundTokenizer: { v: BackgroundTokenizer, editor: vscode.TextEditor, listeners: (() => void)[], waitTokenUpdate: () => Promise<void> } | null = null
 
 export function activate(context: vscode.ExtensionContext) {
 	const selector: vscode.DocumentSelector = { language: "nadesiko3", scheme: undefined }
 	const nako3 = new NakoCompiler()
 
+	const diagnosticCollection = vscode.languages.createDiagnosticCollection("nadesiko3")
+
 	const onChange = () => {
 		const editor = vscode.window.activeTextEditor
+
+		// エディタの値に変更があったときの処理
+		if (backgroundTokenizer !== null) {
+			backgroundTokenizer.v.dirty = true
+		}
+
+		// 以下、エディタが変更された時の処理
 		if (editor === undefined || editor === backgroundTokenizer?.editor) {
 			return
 		}
 		if (backgroundTokenizer !== null) {
 			backgroundTokenizer.v.dispose()
+			backgroundTokenizer.listeners.forEach((f) => f())
+			backgroundTokenizer.listeners = []
 		}
 		if (editor.document.languageId !== 'nadesiko3') {
+			diagnosticCollection.delete(editor.document.uri)
 			return
 		}
 		let listeners = new Array<() => void>()
@@ -84,12 +96,19 @@ export function activate(context: vscode.ExtensionContext) {
 				new DocumentAdapter(editor),
 				nako3,
 				(firstRow, lastRow, ms) => {
+					diagnosticCollection.delete(editor.document.uri)
 					listeners.forEach((f) => f())
 					listeners = []
 				},
-				(code, err) => { },
+				(code, err) => {
+					const range = new vscode.Range(...EditorMarkers.fromError(code, err, (row) => editor.document.lineAt(row).text))
+					diagnosticCollection.set(editor.document.uri, [new vscode.Diagnostic(range, err.message, vscode.DiagnosticSeverity.Error)])
+					listeners.forEach((f) => f())
+					listeners = []
+				},
 			),
 			editor,
+			listeners,
 			waitTokenUpdate: () => new Promise<void>((resolve) => { listeners.push(() => { resolve() }) })
 		}
 	}
@@ -97,15 +116,12 @@ export function activate(context: vscode.ExtensionContext) {
 	const languageFeatures = new LanguageFeatures(AceRange, nako3)
 
 	context.subscriptions.push(
+		diagnosticCollection,
 		vscode.window.onDidChangeActiveTextEditor(() => { onChange() }),
 		vscode.window.onDidChangeTextEditorOptions(() => { onChange() }),
+		vscode.workspace.onDidCloseTextDocument((doc) => { diagnosticCollection.delete(doc.uri) }),
 		vscode.workspace.onDidChangeConfiguration(() => { onChange() }),
-		vscode.workspace.onDidChangeTextDocument((e) => {
-			onChange()
-			if (backgroundTokenizer !== null) {
-				backgroundTokenizer.v.dirty = true
-			}
-		}),
+		vscode.workspace.onDidChangeTextDocument((e) => { onChange() }),
 		vscode.languages.registerDocumentSemanticTokensProvider(selector, {
 			provideDocumentSemanticTokens: async (document) => {
 				const tokensBuilder = new vscode.SemanticTokensBuilder(legend)
@@ -117,7 +133,8 @@ export function activate(context: vscode.ExtensionContext) {
 				}
 				for (let line = 0; line < document.lineCount; line++) {
 					let character = 0
-					for (const token of backgroundTokenizer.v.getTokens(line)) {
+					const tokens = backgroundTokenizer.v.getTokens(line) || []
+					for (const token of tokens) {
 						const type = mapTokenType(token.type)
 						if (type !== null) {
 							tokensBuilder.push(new vscode.Range(line, character, line, character + token.value.length), ...type)

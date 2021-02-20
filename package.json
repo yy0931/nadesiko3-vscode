@@ -167,7 +167,7 @@
 	"dependencies": {
 		"js-beautify": "^1.13.5",
 		"json5": "^2.2.0",
-		"nadesiko3": "git+https://github.com/yy0931/nadesiko3#7f27a40a61927d090b7ddf55168beb9985c7dd68",
+		"nadesiko3": "git+https://github.com/yy0931/nadesiko3#3f211d06c7b120fa0d8e9d8d76b6defec4e430f6",
 		"vscode": "^1.1.37"
 	}
 }

@@ -30,19 +30,34 @@ const config = {
     resolve: { // support reading TypeScript and JavaScript files, 📖 -> https://github.com/TypeStrong/ts-loader
         extensions: ['.ts', '.js']
     },
+    node: {
+        __dirname: true
+    },
     module: {
-        rules: [{
-            test: /\.ts$/,
-            exclude: /node_modules/,
-            use: [{
-                loader: 'ts-loader',
+        rules: [
+                {
+                test: /\.ts$/,
+                exclude: /node_modules/,
+                use: [
+                    {
+                        loader: 'ts-loader',
+                        options: {
+                            compilerOptions: {
+                                "module": "es6" // override `tsconfig.json` so that TypeScript emits native JavaScript modules.
+                            }
+                        }
+                    },
+                ]
+            },
+            {
+                loader: 'string-replace-loader',
+                test: /cnako3\.js$/,
                 options: {
-                    compilerOptions: {
-                        "module": "es6" // override `tsconfig.json` so that TypeScript emits native JavaScript modules.
-                    }
+                    search: '#!/usr/bin/env node',
+                    replace: '',
                 }
-            }]
-        }]
+            }
+        ]
     },
     plugins: [
         // webviewで使うファイルを文字列で指定していることに由来する警告を消す

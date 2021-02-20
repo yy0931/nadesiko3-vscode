@@ -2846,9 +2846,9 @@ nadesiko3-sqlite3sync@0.0.1:
   dependencies:
     sqlite-sync "^0.3.9"
 
-"nadesiko3@git+https://github.com/yy0931/nadesiko3#23e621c3936e80863f546790a5c38e588089b2ec":
+"nadesiko3@git+https://github.com/yy0931/nadesiko3#12c720514e85b35304a2844025666c1151f0dc20":
   version "3.1.18"
-  resolved "git+https://github.com/yy0931/nadesiko3#23e621c3936e80863f546790a5c38e588089b2ec"
+  resolved "git+https://github.com/yy0931/nadesiko3#12c720514e85b35304a2844025666c1151f0dc20"
   dependencies:
     body-parser "^1.19.0"
     browserslist "^4.8.7"
@@ -4206,6 +4206,14 @@ strict-uri-encode@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/strict-uri-encode/-/strict-uri-encode-2.0.0.tgz#b9c7330c7042862f6b142dc274bbcc5866ce3546"
   integrity sha1-ucczDHBChi9rFC3CdLvMWGbONUY=
+
+string-replace-loader@^3.0.1:
+  version "3.0.1"
+  resolved "https://registry.yarnpkg.com/string-replace-loader/-/string-replace-loader-3.0.1.tgz#a899de524a4dfaa296e4be73f1667de150bed8d2"
+  integrity sha512-G6UD9HX1XaKXnWpKgNHPVc/pYYLtP8+UWfORY5n3GTLSUNUo2hU2ABBnC9B3hg7ATWVSIGTisiP8zGq1DlvTbg==
+  dependencies:
+    loader-utils "^2.0.0"
+    schema-utils "^3.0.0"
 
 string-width@^1.0.1:
   version "1.0.2"

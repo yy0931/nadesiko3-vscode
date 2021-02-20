@@ -1,10 +1,12 @@
 import * as vscode from "vscode"
 import { LanguageFeatures, BackgroundTokenizer, AceDocument, TokenType, EditorMarkers } from "nadesiko3/src/wnako3_editor"
 import * as NakoCompiler from "nadesiko3/src/nako3"
+const CNako3 = require("nadesiko3/src/cnako3")
 import * as path from "path"
 import * as fs from "fs"
 import * as util from "util"
 import * as PluginNode from "nadesiko3/src/plugin_node"
+import { NakoImportError } from "nadesiko3/src/nako_errors"
 
 class AceRange {
 	constructor(
@@ -111,10 +113,24 @@ export function activate(context: vscode.ExtensionContext) {
 			backgroundTokenizer.listeners.forEach((f) => f())
 			backgroundTokenizer.listeners = []
 		}
+
 		if (editor.document.languageId !== "nadesiko3") {
 			diagnosticCollection.delete(editor.document.uri)
 			return
 		}
+
+		const validateSyntax = () => {
+			const code = editor.document.getText()
+			try {
+				nako3.parse(code, editor.document.fileName)
+			} catch (err) {
+				const range = new vscode.Range(...EditorMarkers.fromError(code, err, (row) => editor.document.lineAt(row).text))
+				diagnosticCollection.set(editor.document.uri, [new vscode.Diagnostic(range, err.message, vscode.DiagnosticSeverity.Error)])
+			}
+			setTimeout(validateSyntax, 500);
+		}
+		validateSyntax()
+
 		let listeners = new Array<() => void>()
 		backgroundTokenizer = {
 			v: new BackgroundTokenizer(
@@ -126,8 +142,6 @@ export function activate(context: vscode.ExtensionContext) {
 					listeners = []
 				},
 				(code, err) => {
-					const range = new vscode.Range(...EditorMarkers.fromError(code, err, (row) => editor.document.lineAt(row).text))
-					diagnosticCollection.set(editor.document.uri, [new vscode.Diagnostic(range, err.message, vscode.DiagnosticSeverity.Error)])
 					listeners.forEach((f) => f())
 					listeners = []
 				},
@@ -240,23 +254,40 @@ export function activate(context: vscode.ExtensionContext) {
 			try {
 				const code = editor.document.getText()
 				const fileName = editor.document.fileName
+				const srcDir = path.join(context.extensionPath, "node_modules/nadesiko3/src")
+				const log = new Array<string>()
+
+				// コメントを書いた部分以外はCNako3のコードと同じ
 				await nako3.loadDependencies(code, fileName, "", {
-					resolvePath: (name) => {
-						if (path.isAbsolute(name)) {
-							name = path.resolve(name)
-						} else {
-							name = path.resolve(path.join(context.extensionPath, name))
-						}
+					resolvePath: (name, token) => {
 						if (/\.js(\.txt)?$/.test(name) || /^[^\.]*$/.test(name)) {
-							return { filePath: name, type: 'js' }
+							return { filePath: path.resolve(CNako3.findPluginFile(name, fileName, srcDir, log)), type: 'js' } // 変更: __dirnameがたとえ node: { __dirname: true } を指定したとしても正しい値にならない
 						}
 						if (/\.nako3?(\.txt)?$/.test(name)) {
-							return { filePath: name, type: 'nako3' }
+							if (path.isAbsolute(name)) {
+								return { filePath: path.resolve(name), type: 'nako3' }
+							} else {
+								if (editor.document.isUntitled) {
+									throw new NakoImportError("相対パスによる取り込み文を使うには、ファイルを保存してください。", token.line, token.file) // 追加: Untitledなファイルではファイルパスを取得できない
+								}
+								return { filePath: path.join(path.dirname(token.file), name), type: 'nako3' }
+							}
 						}
 						return { filePath: name, type: 'invalid' }
 					},
-					readNako3: (name) => ({ sync: true, value: fs.readFileSync(name).toString() }),
-					readJs: (name) => ({ sync: true, value: require(name) }),
+					readNako3: (name, token) => {
+						if (!fs.existsSync(name)) {
+							throw new NakoImportError(`ファイル ${name} が存在しません。`, token.line, token.file)
+						}
+						return { sync: true, value: fs.readFileSync(name).toString() }
+					},
+					readJs: (name, token) => {
+						try {
+							return { sync: true, value: eval(`require(${JSON.stringify(name)})`) } // 変更: こうしないとrequireがwebpackに解析されてしまう https://github.com/webpack/webpack/issues/4175#issuecomment-323023911
+						} catch (err) {
+							throw new NakoImportError(`プラグイン ${name} の取り込みに失敗: ${err.message}\n検索したパス: ${log.join(', ')}`, token.line, token.file)
+						}
+					},
 				})
 				nako3.runReset(code, fileName)
 			} catch (e) {

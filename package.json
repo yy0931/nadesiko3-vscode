@@ -46,30 +46,6 @@
 				{
 					"command": "nadesiko3.runActiveFile",
 					"when": "editorLangId == nadesiko3"
-				},
-				{
-					"command": "nadesiko3.showJs",
-					"when": "editorLangId == nadesiko3"
-				},
-				{
-					"command": "nadesiko3.showBeautifiedJs",
-					"when": "editorLangId == nadesiko3"
-				},
-				{
-					"command": "nadesiko3.showTokens",
-					"when": "editorLangId == nadesiko3"
-				},
-				{
-					"command": "nadesiko3.showSimplifiedTokens",
-					"when": "editorLangId == nadesiko3"
-				},
-				{
-					"command": "nadesiko3.showAst",
-					"when": "editorLangId == nadesiko3"
-				},
-				{
-					"command": "nadesiko3.showSimplifiedAst",
-					"when": "editorLangId == nadesiko3"
 				}
 			]
 		},
@@ -79,36 +55,6 @@
 				"title": "Run Active File",
 				"category": "Nadesiko3",
 				"icon": "$(play)"
-			},
-			{
-				"command": "nadesiko3.showJs",
-				"title": "Show JavaScript Code",
-				"category": "Nadesiko3"
-			},
-			{
-				"command": "nadesiko3.showBeautifiedJs",
-				"title": "Show Beautified JavaScript Code",
-				"category": "Nadesiko3"
-			},
-			{
-				"command": "nadesiko3.showTokens",
-				"title": "Show Tokens",
-				"category": "Nadesiko3"
-			},
-			{
-				"command": "nadesiko3.showSimplifiedTokens",
-				"title": "Show Simplified Tokens",
-				"category": "Nadesiko3"
-			},
-			{
-				"command": "nadesiko3.showAst",
-				"title": "Show AST",
-				"category": "Nadesiko3"
-			},
-			{
-				"command": "nadesiko3.showSimplifiedAst",
-				"title": "Show Simplified AST",
-				"category": "Nadesiko3"
 			}
 		],
 		"configuration": {
@@ -128,6 +74,7 @@
 		}
 	},
 	"scripts": {
+		"prepare": "cd node_modules/nadesiko3 && npm i && npm run build:command && cd ../..",
 		"vscode:prepublish": "webpack --mode production",
 		"webpack": "webpack --mode development",
 		"webpack-dev": "webpack --mode development --watch",
@@ -141,6 +88,7 @@
 		"chai": "^4.2.0",
 		"mocha": "^8.2.1",
 		"rimraf": "^3.0.2",
+		"string-replace-loader": "^3.0.1",
 		"ts-loader": "^8.0.17",
 		"ts-node": "^9.1.1",
 		"typescript": "^4.1.3",
@@ -152,6 +100,6 @@
 		"@types/vscode": "^1.53.0",
 		"js-beautify": "^1.13.5",
 		"json5": "^2.2.0",
-		"nadesiko3": "git+https://github.com/yy0931/nadesiko3#23e621c3936e80863f546790a5c38e588089b2ec"
+		"nadesiko3": "git+https://github.com/yy0931/nadesiko3#12c720514e85b35304a2844025666c1151f0dc20"
 	}
 }

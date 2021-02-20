@@ -54,9 +54,11 @@ code {
     padding: 5px;
     width: 100%;
     display: block;
-    overflow: scroll;
+    overflow-y: scroll;
     margin: 0;
     font-size: 1.4em;
+    white-space: pre-wrap;
+    word-break: break-all;
 }
 .code-scroll code {
     margin-left: 10px;

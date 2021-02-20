@@ -7,6 +7,7 @@ import * as fs from "fs"
 import * as util from "util"
 import * as PluginNode from "nadesiko3/src/plugin_node"
 import { NakoImportError } from "nadesiko3/src/nako_errors"
+import * as nodeHTMLParser from "node-html-parser"
 
 class AceRange {
 	constructor(
@@ -61,13 +62,34 @@ const mapTokenType = (type: TokenType): [VSCodeTokenType, string[]] | null => {
 		case "support.constant": return ["variable", ["readonly"]]
 		case "variable.language": return ["macro", []]
 		case "variable.other": return ["variable", []]
+		case "composition_placeholder": return null
 		default:
 			const _: never = type
 			return null
 	}
 }
 
-let backgroundTokenizer: { v: BackgroundTokenizer, editor: vscode.TextEditor, listeners: (() => void)[], waitTokenUpdate: () => Promise<void> } | null = null
+// `offset`の位置にあるトークンを取得
+export const getTokenAt = (backgroundTokenizer: BackgroundTokenizer, position: vscode.Position) => {
+	const tokens = backgroundTokenizer.getTokens(position.line)
+	let left = 0
+	for (let i = 0; i < tokens.length; i++) {
+		if (position.character < left + tokens[i].value.length) {
+			return { left, token: tokens[i] }
+		}
+		left += tokens[i].value.length
+	}
+	return null
+}
+
+let state: {
+	backgroundTokenizer: BackgroundTokenizer
+	editor: vscode.TextEditor
+	listeners: (() => void)[]
+	waitTokenUpdate: () => Promise<void>
+	code: string | null
+	needValidation: boolean
+} | null = null
 let panel: vscode.WebviewPanel | null = null
 
 export function activate(context: vscode.ExtensionContext) {
@@ -96,76 +118,95 @@ export function activate(context: vscode.ExtensionContext) {
 
 	const diagnosticCollection = vscode.languages.createDiagnosticCollection("nadesiko3")
 
-	const onChange = () => {
-		const editor = vscode.window.activeTextEditor
+	const update = () => {
+		// 別の言語のファイルならファイルが開かれていないとする。
+		const editor = vscode.window.activeTextEditor?.document.languageId === "nadesiko3" ? vscode.window.activeTextEditor : undefined
 
-		// エディタの値に変更があったときの処理
-		if (backgroundTokenizer !== null) {
-			backgroundTokenizer.v.dirty = true
+		// エディタが閉じられたとき
+		if (state !== null && state.editor !== editor) {
+			state.backgroundTokenizer.dispose()
+			state.listeners.forEach((f) => f())
+			state.listeners = []
+			diagnosticCollection.delete(state.editor.document.uri)
+			state = null
 		}
 
-		// 以下、エディタが変更された時の処理
-		if (editor === undefined || editor === backgroundTokenizer?.editor) {
-			return
-		}
-		if (backgroundTokenizer !== null) {
-			backgroundTokenizer.v.dispose()
-			backgroundTokenizer.listeners.forEach((f) => f())
-			backgroundTokenizer.listeners = []
-		}
-
-		if (editor.document.languageId !== "nadesiko3") {
-			diagnosticCollection.delete(editor.document.uri)
+		// 新しくフォーカスされたエディタが無いとき
+		if (editor === undefined) {
 			return
 		}
 
-		const validateSyntax = () => {
-			const code = editor.document.getText()
-			try {
-				nako3.parse(code, editor.document.fileName)
-			} catch (err) {
-				const range = new vscode.Range(...EditorMarkers.fromError(code, err, (row) => editor.document.lineAt(row).text))
-				diagnosticCollection.set(editor.document.uri, [new vscode.Diagnostic(range, err.message, vscode.DiagnosticSeverity.Error)])
+		// 別のエディタをフォーカスしたとき
+		if (state?.editor !== editor) {
+			let listeners = new Array<() => void>()
+			state = {
+				backgroundTokenizer: new BackgroundTokenizer(
+					new DocumentAdapter(editor),
+					nako3,
+					(firstRow, lastRow, ms) => { listeners.forEach((f) => f()); listeners = [] },
+					(code, err) => { listeners.forEach((f) => f()); listeners = [] },
+				),
+				editor,
+				listeners,
+				waitTokenUpdate: () => new Promise<void>((resolve) => { listeners.push(() => { resolve() }) }),
+				code: null,
+				needValidation: true,
 			}
-			setTimeout(validateSyntax, 500);
+			validateSyntax()
 		}
-		validateSyntax()
 
-		let listeners = new Array<() => void>()
-		backgroundTokenizer = {
-			v: new BackgroundTokenizer(
-				new DocumentAdapter(editor),
-				nako3,
-				(firstRow, lastRow, ms) => {
-					diagnosticCollection.delete(editor.document.uri)
-					listeners.forEach((f) => f())
-					listeners = []
-				},
-				(code, err) => {
-					listeners.forEach((f) => f())
-					listeners = []
-				},
-			),
-			editor,
-			listeners,
-			waitTokenUpdate: () => new Promise<void>((resolve) => { listeners.push(() => { resolve() }) })
+		// エディタの値に変更があったとき
+		if (state.code !== state.editor.document.getText()) {
+			state.code = state.editor.document.getText()
+			state.backgroundTokenizer.dirty = true
+			state.needValidation = true
+			console.log(`update: ${state.code}`)
 		}
 	}
 
-	const languageFeatures = new LanguageFeatures(AceRange, nako3)
+	const validateSyntax = () => {
+		if (state !== null && state.needValidation) {
+			state.needValidation = false
+			const code = state.editor.document.getText()
+			try {
+				nako3.parse(code, state.editor.document.fileName)
+				diagnosticCollection.set(state.editor.document.uri, [])
+			} catch (err) {
+				const range = new vscode.Range(...EditorMarkers.fromError(code, err, (row) => code.split('\n')[row] || ''))
+				diagnosticCollection.set(state.editor.document.uri, [new vscode.Diagnostic(range, err.message, vscode.DiagnosticSeverity.Error)])
+			}
+		}
+		setTimeout(validateSyntax, 500);
+	}
+	validateSyntax()
 
 	context.subscriptions.push(
 		diagnosticCollection,
-		vscode.window.onDidChangeActiveTextEditor(() => { onChange() }),
-		vscode.window.onDidChangeTextEditorOptions(() => { onChange() }),
-		vscode.workspace.onDidOpenTextDocument(() => { onChange() }),
+		vscode.window.onDidChangeActiveTextEditor(() => { update() }),
+		vscode.window.onDidChangeTextEditorOptions(() => { update() }),
+		vscode.workspace.onDidOpenTextDocument(() => { update() }),
 		vscode.workspace.onDidCloseTextDocument((doc) => { diagnosticCollection.delete(doc.uri) }),
-		vscode.workspace.onDidChangeConfiguration(() => { onChange() }),
-		vscode.workspace.onDidChangeTextDocument((e) => { onChange() }),
+		vscode.workspace.onDidChangeConfiguration(() => { update() }),
+		vscode.workspace.onDidChangeTextDocument((e) => { update() }),
+		vscode.languages.registerHoverProvider(selector, {
+			provideHover(document, position) {
+				update()
+				if (state === null) {
+					return
+				}
+				const token = getTokenAt(state.backgroundTokenizer, position)
+				if (token === null || !token.token.docHTML) {
+					return
+				}
+				// 例: `（Aを）表示する<span class="tooltip-plugin-name">PluginSystem</span>`
+				const root = nodeHTMLParser.parse(token.token.docHTML)
+				return new vscode.Hover("```\n" + root.childNodes[0].innerText + "\n```\n\n" + root.childNodes[1].innerText, new vscode.Range(position.line, token.left, position.line, token.left + token.token.value.length))
+			}
+		}),
 		vscode.languages.registerCompletionItemProvider(selector, {
 			provideCompletionItems(document, position, token, context) {
-				onChange()
-				if (backgroundTokenizer === null) {
+				update()
+				if (state === null) {
 					return []
 				}
 				const prefix = LanguageFeatures.getCompletionPrefix(document.lineAt(position.line).text, nako3)
@@ -176,7 +217,7 @@ export function activate(context: vscode.ExtensionContext) {
 						snippet.insertText = new vscode.SnippetString(item.snippet)
 						return snippet
 					}),
-					...LanguageFeatures.getCompletionItems(position.line, prefix, nako3, backgroundTokenizer.v).map((item) => {
+					...LanguageFeatures.getCompletionItems(position.line, prefix, nako3, state.backgroundTokenizer).map((item) => {
 						const completion = new vscode.CompletionItem(item.caption, item.meta === '変数' ? vscode.CompletionItemKind.Variable : vscode.CompletionItemKind.Function)
 						completion.insertText = item.value
 						completion.detail = item.meta
@@ -190,15 +231,15 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.languages.registerDocumentSemanticTokensProvider(selector, {
 			provideDocumentSemanticTokens: async (document) => {
 				const tokensBuilder = new vscode.SemanticTokensBuilder(legend)
-				if (document !== backgroundTokenizer?.editor.document) {
+				if (document !== state?.editor.document) {
 					return
 				}
-				if (backgroundTokenizer.v.dirty) {
-					await backgroundTokenizer.waitTokenUpdate()
+				if (state.backgroundTokenizer.dirty) {
+					await state.waitTokenUpdate()
 				}
 				for (let line = 0; line < document.lineCount; line++) {
 					let character = 0
-					const tokens = backgroundTokenizer.v.getTokens(line) || []
+					const tokens = state.backgroundTokenizer.getTokens(line) || []
 					for (const token of tokens) {
 						const type = mapTokenType(token.type)
 						if (type !== null) {
@@ -290,6 +331,11 @@ export function activate(context: vscode.ExtensionContext) {
 					},
 				})
 				nako3.runReset(code, fileName)
+
+				// 依存ファイルの読み込みによってエラーが解消されうるため、dirtyをtrueにして再度エラーをチェックさせる。
+				if (state !== null) {
+					state.needValidation = true
+				}
 			} catch (e) {
 				panel.webview.postMessage({ type: "err", line: e.message })
 			}
@@ -298,6 +344,6 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 export function deactivate() {
-	backgroundTokenizer?.v.dispose()
+	state?.backgroundTokenizer.dispose()
 	panel?.dispose()
 }

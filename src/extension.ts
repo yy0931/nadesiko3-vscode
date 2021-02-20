@@ -152,7 +152,6 @@ export function activate(context: vscode.ExtensionContext) {
 				code: null,
 				needValidation: true,
 			}
-			validateSyntax()
 		}
 
 		// エディタの値に変更があったとき
@@ -164,21 +163,28 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	}
 
-	const validateSyntax = () => {
-		if (state !== null && state.needValidation) {
-			state.needValidation = false
-			const code = state.editor.document.getText()
-			try {
-				nako3.parse(code, state.editor.document.fileName)
-				diagnosticCollection.set(state.editor.document.uri, [])
-			} catch (err) {
-				const range = new vscode.Range(...EditorMarkers.fromError(code, err, (row) => code.split('\n')[row] || ''))
-				diagnosticCollection.set(state.editor.document.uri, [new vscode.Diagnostic(range, err.message, vscode.DiagnosticSeverity.Error)])
+	{
+		let canceled = false
+		const validateSyntax = () => {
+			if (canceled) {
+				return
 			}
+			if (state !== null && state.needValidation) {
+				state.needValidation = false
+				const code = state.editor.document.getText()
+				try {
+					nako3.parse(code, state.editor.document.fileName)
+					diagnosticCollection.set(state.editor.document.uri, [])
+				} catch (err) {
+					const range = new vscode.Range(...EditorMarkers.fromError(code, err, (row) => code.split('\n')[row] || ''))
+					diagnosticCollection.set(state.editor.document.uri, [new vscode.Diagnostic(range, err.message, vscode.DiagnosticSeverity.Error)])
+				}
+			}
+			setTimeout(validateSyntax, 500)
 		}
-		setTimeout(validateSyntax, 500);
+		validateSyntax()
+		context.subscriptions.push({ dispose() { canceled = true } })
 	}
-	validateSyntax()
 
 	context.subscriptions.push(
 		diagnosticCollection,

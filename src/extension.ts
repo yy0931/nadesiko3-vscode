@@ -141,6 +141,16 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.workspace.onDidCloseTextDocument((doc) => { diagnosticCollection.delete(doc.uri) }),
 		vscode.workspace.onDidChangeConfiguration(() => { onChange() }),
 		vscode.workspace.onDidChangeTextDocument((e) => { onChange() }),
+		vscode.languages.registerCompletionItemProvider(selector, {
+			provideCompletionItems(document, position, token, context) {
+				return LanguageFeatures.getSnippets(document.getText()).map((item) => {
+					const snippet = new vscode.CompletionItem(item.caption, vscode.CompletionItemKind.Snippet)
+					snippet.detail = item.meta
+					snippet.insertText = new vscode.SnippetString(item.snippet)
+					return snippet
+				})
+			}
+		}),
 		vscode.languages.registerDocumentSemanticTokensProvider(selector, {
 			provideDocumentSemanticTokens: async (document) => {
 				const tokensBuilder = new vscode.SemanticTokensBuilder(legend)

@@ -7,3 +7,5 @@ yarn-error.log
 todo.md
 parser.md
 log.txt
+.cache/
+dist/

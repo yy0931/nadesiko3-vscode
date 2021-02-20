@@ -2,7 +2,7 @@
 	"name": "nadesiko3-vscode",
 	"displayName": "日本語プログラミング言語 なでしこv3",
 	"description": "",
-	"version": "1.10.0",
+	"version": "1.11.0",
 	"license": "MIT",
 	"publisher": "yy0931",
 	"repository": {
@@ -18,7 +18,7 @@
 	"activationEvents": [
 		"onLanguage:nadesiko3"
 	],
-	"main": "./out/extension.js",
+	"main": "./dist/extension.js",
 	"contributes": {
 		"configurationDefaults": {
 			"[nadesiko3]": {
@@ -38,13 +38,6 @@
 					".nako3"
 				],
 				"configuration": "./language/language-configuration.json"
-			}
-		],
-		"grammars": [
-			{
-				"language": "nadesiko3",
-				"scopeName": "source.nadesiko3",
-				"path": "./language/nadesiko3.tmLanguage.json"
 			}
 		],
 		"menus": {
@@ -150,37 +143,31 @@
 		}
 	},
 	"scripts": {
-		"vscode:prepublish": "yarn run compile",
-		"compile": "ts-node gen_nako3_plugin_declaration.ts && tsc",
-		"watch": "ts-node gen_nako3_plugin_declaration.ts && tsc -watch",
+		"vscode:prepublish": "webpack --mode production",
+		"webpack": "webpack --mode development",
+		"webpack-dev": "webpack --mode development --watch",
 		"test": "TS_NODE_FILES=\"true\" mocha -r ts-node/register 'src/**/*.test.ts'",
 		"package": "rimraf out && vsce package"
 	},
 	"devDependencies": {
 		"@types/chai": "^4.2.14",
-		"@types/express": "^4.17.11",
-		"@types/js-beautify": "^1.13.1",
 		"@types/mocha": "^8.2.0",
 		"@types/node": "^14.14.22",
 		"@types/vscode": "^1.51.0",
-		"@types/ws": "^7.4.0",
 		"chai": "^4.2.0",
 		"mocha": "^8.2.1",
 		"rimraf": "^3.0.2",
+		"ts-loader": "^8.0.17",
 		"ts-node": "^9.1.1",
 		"typescript": "^4.1.3",
-		"vscode-test": "^1.5.0"
+		"vscode-test": "^1.5.0",
+		"webpack": "^5.23.0",
+		"webpack-cli": "^4.5.0"
 	},
 	"dependencies": {
-		"chart.js": "^2.9.4",
-		"express": "^4.17.1",
-		"get-port": "^5.1.1",
-		"jquery": "^3.5.1",
 		"js-beautify": "^1.13.5",
 		"json5": "^2.2.0",
-		"marked": "^1.2.8",
-		"nadesiko3": "^3.1.16",
-		"open": "^7.4.0",
-		"ws": "^7.4.2"
+		"nadesiko3": "git+https://github.com/yy0931/nadesiko3#7f27a40a61927d090b7ddf55168beb9985c7dd68",
+		"vscode": "^1.1.37"
 	}
 }

@@ -11,3 +11,6 @@ vsc-extension-quickstart.md
 **/*.ts
 node_modules/**
 !node_modules/nadesiko3/**
+.github/**
+.cache/**
+example/**

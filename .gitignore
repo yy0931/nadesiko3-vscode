@@ -9,3 +9,4 @@ parser.md
 log.txt
 .cache/
 dist/
+example/**

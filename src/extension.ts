@@ -159,7 +159,6 @@ export function activate(context: vscode.ExtensionContext) {
 			state.code = state.editor.document.getText()
 			state.backgroundTokenizer.dirty = true
 			state.needValidation = true
-			console.log(`update: ${state.code}`)
 		}
 	}
 
@@ -206,7 +205,7 @@ export function activate(context: vscode.ExtensionContext) {
 				}
 				// 例: `（Aを）表示する<span class="tooltip-plugin-name">PluginSystem</span>`
 				const root = nodeHTMLParser.parse(token.token.docHTML)
-				return new vscode.Hover("```\n" + root.childNodes[0].innerText + "\n```\n\n" + root.childNodes[1].innerText, new vscode.Range(position.line, token.left, position.line, token.left + token.token.value.length))
+				return new vscode.Hover("```\n" + root.childNodes[0].innerText + "\n```\n\n" + (root.childNodes.length >= 2 ? root.childNodes[1].innerText : ""), new vscode.Range(position.line, token.left, position.line, token.left + token.token.value.length))
 			}
 		}),
 		vscode.languages.registerCompletionItemProvider(selector, {
@@ -237,6 +236,7 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.languages.registerDocumentSemanticTokensProvider(selector, {
 			provideDocumentSemanticTokens: async (document) => {
 				const tokensBuilder = new vscode.SemanticTokensBuilder(legend)
+				const id = Math.floor(Math.random() * 100000)
 				if (document !== state?.editor.document) {
 					return
 				}

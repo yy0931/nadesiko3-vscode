@@ -102,7 +102,7 @@
 		"@types/vscode": "^1.53.0",
 		"js-beautify": "^1.13.5",
 		"json5": "^2.2.0",
-		"nadesiko3": "git+https://github.com/yy0931/nadesiko3#109b9b67e6496ab09cb2335d3656be535d15ca2e",
+		"nadesiko3": "git+https://github.com/yy0931/nadesiko3#b135228746f4b660f07e81a419245807c55233b7",
 		"node-html-parser": "^2.1.0"
 	}
 }

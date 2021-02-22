@@ -82,6 +82,44 @@ export const getTokenAt = (backgroundTokenizer: BackgroundTokenizer, position: v
 	return null
 }
 
+// コメントを書いた部分以外はCNako3のコードと同じ
+// NOTE: ウェブから依存するファイルをダウンロードできるように変更する場合は、diagnosticsで使うとき、loadDependenciesを呼ばないか、手動で実行されたときに存在した依存ファイルだけをホワイトリストで許可するべき。
+const loadDependencies = (nako3: NakoCompiler, code: string, fileName: string, extensionPath: string, isUntitled: boolean) => {
+	const srcDir = path.join(extensionPath, "node_modules/nadesiko3/src")
+	const log = new Array<string>()
+	return nako3.loadDependencies(code, fileName, "", {
+		resolvePath: (name, token) => {
+			if (/\.js(\.txt)?$/.test(name) || /^[^\.]*$/.test(name)) {
+				return { filePath: path.resolve(CNako3.findPluginFile(name, fileName, srcDir, log)), type: 'js' } // 変更: __dirnameがたとえ node: { __dirname: true } を指定したとしても正しい値にならない
+			}
+			if (/\.nako3?(\.txt)?$/.test(name)) {
+				if (path.isAbsolute(name)) {
+					return { filePath: path.resolve(name), type: 'nako3' }
+				} else {
+					if (isUntitled) {
+						throw new NakoImportError("相対パスによる取り込み文を使うには、ファイルを保存してください。", token.line, token.file) // 追加: Untitledなファイルではファイルパスを取得できない
+					}
+					return { filePath: path.join(path.dirname(token.file), name), type: 'nako3' }
+				}
+			}
+			return { filePath: name, type: 'invalid' }
+		},
+		readNako3: (name, token) => {
+			if (!fs.existsSync(name)) {
+				throw new NakoImportError(`ファイル ${name} が存在しません。`, token.line, token.file)
+			}
+			return { sync: true, value: fs.readFileSync(name).toString() }
+		},
+		readJs: (name, token) => {
+			try {
+				return { sync: true, value: () => eval(`require(${JSON.stringify(name)})`) } // 変更: こうしないとrequireがwebpackに解析されてしまう https://github.com/webpack/webpack/issues/4175#issuecomment-323023911
+			} catch (err) {
+				throw new NakoImportError(`プラグイン ${name} の取り込みに失敗: ${err.message}\n検索したパス: ${log.join(', ')}`, token.line, token.file)
+			}
+		},
+	})
+}
+
 let state: {
 	backgroundTokenizer: BackgroundTokenizer
 	editor: vscode.TextEditor
@@ -164,7 +202,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	{
 		let canceled = false
-		const validateSyntax = () => {
+		const validateSyntax = async () => {
 			if (canceled) {
 				return
 			}
@@ -172,6 +210,7 @@ export function activate(context: vscode.ExtensionContext) {
 				state.needValidation = false
 				const code = state.editor.document.getText()
 				try {
+					await loadDependencies(nako3, code, state.editor.document.fileName, context.extensionPath, state.editor.document.isUntitled)
 					nako3.parse(code, state.editor.document.fileName)
 					diagnosticCollection.set(state.editor.document.uri, [])
 				} catch (err) {
@@ -301,41 +340,7 @@ export function activate(context: vscode.ExtensionContext) {
 			try {
 				const code = editor.document.getText()
 				const fileName = editor.document.fileName
-				const srcDir = path.join(context.extensionPath, "node_modules/nadesiko3/src")
-				const log = new Array<string>()
-
-				// コメントを書いた部分以外はCNako3のコードと同じ
-				await nako3.loadDependencies(code, fileName, "", {
-					resolvePath: (name, token) => {
-						if (/\.js(\.txt)?$/.test(name) || /^[^\.]*$/.test(name)) {
-							return { filePath: path.resolve(CNako3.findPluginFile(name, fileName, srcDir, log)), type: 'js' } // 変更: __dirnameがたとえ node: { __dirname: true } を指定したとしても正しい値にならない
-						}
-						if (/\.nako3?(\.txt)?$/.test(name)) {
-							if (path.isAbsolute(name)) {
-								return { filePath: path.resolve(name), type: 'nako3' }
-							} else {
-								if (editor.document.isUntitled) {
-									throw new NakoImportError("相対パスによる取り込み文を使うには、ファイルを保存してください。", token.line, token.file) // 追加: Untitledなファイルではファイルパスを取得できない
-								}
-								return { filePath: path.join(path.dirname(token.file), name), type: 'nako3' }
-							}
-						}
-						return { filePath: name, type: 'invalid' }
-					},
-					readNako3: (name, token) => {
-						if (!fs.existsSync(name)) {
-							throw new NakoImportError(`ファイル ${name} が存在しません。`, token.line, token.file)
-						}
-						return { sync: true, value: fs.readFileSync(name).toString() }
-					},
-					readJs: (name, token) => {
-						try {
-							return { sync: true, value: eval(`require(${JSON.stringify(name)})`) } // 変更: こうしないとrequireがwebpackに解析されてしまう https://github.com/webpack/webpack/issues/4175#issuecomment-323023911
-						} catch (err) {
-							throw new NakoImportError(`プラグイン ${name} の取り込みに失敗: ${err.message}\n検索したパス: ${log.join(', ')}`, token.line, token.file)
-						}
-					},
-				})
+				await loadDependencies(nako3, code, fileName, context.extensionPath, editor.document.isUntitled)
 				nako3.runReset(code, fileName)
 
 				// 依存ファイルの読み込みによってエラーが解消されうるため、dirtyをtrueにして再度エラーをチェックさせる。

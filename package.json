@@ -56,22 +56,7 @@
 				"category": "Nadesiko3",
 				"icon": "$(play)"
 			}
-		],
-		"configuration": {
-			"title": "Nadesiko3",
-			"properties": {
-				"nadesiko3.showTokenDecorations": {
-					"type": "boolean",
-					"default": true,
-					"description": "トークンの区切り線を表示する"
-				},
-				"nadesiko3.showJosiDecorations": {
-					"type": "boolean",
-					"default": true,
-					"description": "助詞を強調表示する"
-				}
-			}
-		}
+		]
 	},
 	"scripts": {
 		"prepare": "cd node_modules/nadesiko3 && npm i && npm run build:command && cd ../..",
@@ -102,7 +87,7 @@
 		"@types/vscode": "^1.53.0",
 		"js-beautify": "^1.13.5",
 		"json5": "^2.2.0",
-		"nadesiko3": "git+https://github.com/yy0931/nadesiko3#b135228746f4b660f07e81a419245807c55233b7",
+		"nadesiko3": "git+https://github.com/yy0931/nadesiko3#763cc10904af5a67a27b8c7c00240d4a03b9b688",
 		"node-html-parser": "^2.1.0"
 	}
 }

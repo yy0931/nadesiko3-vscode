@@ -9,8 +9,8 @@ vsc-extension-quickstart.md
 **/.eslintrc.json
 **/*.map
 **/*.ts
-node_modules/**
-!node_modules/nadesiko3/**
 .github/**
 .cache/**
 example/**
+
+# node_modulesを除外するとなでしこのプラグインを実行時に取得できなくなる。

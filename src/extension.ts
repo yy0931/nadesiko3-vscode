@@ -1,5 +1,5 @@
 import * as vscode from "vscode"
-import { LanguageFeatures, BackgroundTokenizer, AceDocument, TokenType, EditorMarkers } from "nadesiko3/src/wnako3_editor"
+import { LanguageFeatures, BackgroundTokenizer, AceDocument, EditorMarkers } from "nadesiko3/src/wnako3_editor"
 import * as NakoCompiler from "nadesiko3/src/nako3"
 const CNako3 = require("nadesiko3/src/cnako3")
 import * as path from "path"
@@ -40,31 +40,33 @@ class DocumentAdapter implements AceDocument {
 	}
 }
 
-type VSCodeTokenType = "namespace" | "class" | "enum" | "interface" | "struct" | "typeParameter" | "type" | "parameter" | "variable" | "property" | "enumMember" | "event" | "function" | "method" | "macro" | "label" | "comment" | "string" | "keyword" | "number" | "regexp" | "operator"
-
 const legend = new vscode.SemanticTokensLegend(
-	["namespace", "class", "enum", "interface", "struct", "typeParameter", "type", "parameter", "variable", "property", "enumMember", "event", "function", "method", "macro", "label", "comment", "string", "keyword", "number", "regexp", "operator"] as VSCodeTokenType[],
-	["declaration", "definition", "readonly", "static", "deprecated", "abstract", "async", "modification", "documentation", "defaultLibrary"])
+	["variable", "function", "macro", "comment", "string", "keyword", "number", "operator"],
+	["readonly", "underline"])
 
 /**
  * Aceのtoken typeをVSCodeのtoken typeにマップする。
  */
-const mapTokenType = (type: TokenType): [VSCodeTokenType, string[]] | null => {
+const mapTokenType = (type: string): [string, string[]] | null => {
+	const modifiers = new Array<string>()
+	if (type.endsWith(".markup.underline")) {
+		type = type.replace(".markup.underline", "")
+		modifiers.push("underline")
+	}
 	switch (type) {
-		case "comment.block": return ["comment", []]
-		case "comment.line": return ["comment", []]
-		case "constant.numeric": return ["number", []]
-		case "entity.name.function": return ["function", []]
-		case "keyword.control": return ["keyword", []]
-		case "keyword.operator": return ["operator", []]
+		case "comment.block": return ["comment", modifiers]
+		case "comment.line": return ["comment", modifiers]
+		case "constant.numeric": return ["number", modifiers]
+		case "entity.name.function": return ["function", modifiers]
+		case "keyword.control": return ["keyword", modifiers]
+		case "keyword.operator": return ["operator", modifiers]
 		case "markup.other": return null
-		case "string.other": return ["string", []]
-		case "support.constant": return ["variable", ["readonly"]]
-		case "variable.language": return ["macro", []]
-		case "variable.other": return ["variable", []]
+		case "string.other": return ["string", modifiers]
+		case "support.constant": return ["variable", [...modifiers, "readonly"]]
+		case "variable.language": return ["macro", modifiers]
+		case "variable.other": return ["variable", modifiers]
 		case "composition_placeholder": return null
 		default:
-			const _: never = type
 			return null
 	}
 }
@@ -183,6 +185,7 @@ export function activate(context: vscode.ExtensionContext) {
 					nako3,
 					(firstRow, lastRow, ms) => { listeners.forEach((f) => f()); listeners = [] },
 					(code, err) => { listeners.forEach((f) => f()); listeners = [] },
+					true,
 				),
 				editor,
 				listeners,

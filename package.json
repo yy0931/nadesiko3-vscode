@@ -39,7 +39,7 @@
 				"extensions": [
 					".nako3"
 				],
-				"configuration": "./language/language-configuration.json"
+				"configuration": "./language-configuration.json"
 			}
 		],
 		"menus": {

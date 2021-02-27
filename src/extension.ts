@@ -9,6 +9,9 @@ import * as PluginNode from "nadesiko3/src/plugin_node"
 import { NakoImportError } from "nadesiko3/src/nako_errors"
 import * as nodeHTMLParser from "node-html-parser"
 
+/**
+ * ace editor に依存せずにAceと同じ形式のRangeクラスを使う。
+ */
 class AceRange {
 	constructor(
 		public readonly startLine: number,
@@ -40,12 +43,17 @@ class DocumentAdapter implements AceDocument {
 	}
 }
 
+/**
+ * semantic highlight に使うtypeとmodifierのリスト。
+ * 使える名前は https://code.visualstudio.com/api/language-extensions/semantic-highlight-guide#semantic-token-classification に書いてある。
+ * そこに書いていない名前を使うと大抵の場合色が付かないが、package.jsonの contributes.semanticTokenScopes でtmlanguageのよくあるscope名に変換すれば色が付く。
+ */
 const legend = new vscode.SemanticTokensLegend(
-	["variable", "function", "macro", "comment", "string", "keyword", "number", "operator"],
-	["readonly", "underline"])
+	["variable", "function", "macro", "comment", "string", "keyword", "number", "operator"], // tokenTypes
+	["readonly", "underline"])  // tokenModifiers。underlineはpackage.jsonでtmlanguageのmarkup.underlineに変換して下線を引いている。
 
 /**
- * Aceのtoken typeをVSCodeのtoken typeにマップする。
+ * Aceのtoken typeをVSCodeのtoken typeにマップする。[type, modifiers] を返す。返す値はlegendで定義されている必要がある。
  */
 const mapTokenType = (type: string): [string, string[]] | null => {
 	const modifiers = new Array<string>()
@@ -71,7 +79,7 @@ const mapTokenType = (type: string): [string, string[]] | null => {
 	}
 }
 
-// `offset`の位置にあるトークンを取得
+// `position` の位置にあるトークンを取得する。
 export const getTokenAt = (backgroundTokenizer: BackgroundTokenizer, position: vscode.Position) => {
 	const tokens = backgroundTokenizer.getTokens(position.line)
 	let left = 0
@@ -84,7 +92,7 @@ export const getTokenAt = (backgroundTokenizer: BackgroundTokenizer, position: v
 	return null
 }
 
-// コメントを書いた部分以外はCNako3のコードと同じ
+// 依存ファイルを取り込む。コメントを書いた部分以外はCNako3のコードと同じ
 // NOTE: ウェブから依存するファイルをダウンロードできるように変更する場合は、diagnosticsで使うとき、loadDependenciesを呼ばないか、手動で実行されたときに存在した依存ファイルだけをホワイトリストで許可するべき。
 const loadDependencies = (nako3: NakoCompiler, code: string, fileName: string, extensionPath: string, isUntitled: boolean) => {
 	const srcDir = path.join(extensionPath, "node_modules/nadesiko3/src")
@@ -122,6 +130,7 @@ const loadDependencies = (nako3: NakoCompiler, code: string, fileName: string, e
 	})
 }
 
+// 現在フォーカスされているエディタの状態を持つ変数
 let state: {
 	backgroundTokenizer: BackgroundTokenizer
 	editor: vscode.TextEditor
@@ -132,6 +141,7 @@ let state: {
 } | null = null
 let panel: vscode.WebviewPanel | null = null
 
+// 拡張機能が有効化されるとこの関数が呼ばれる。有効化されるタイミングは package.json のactivationEventsで定義される。
 export function activate(context: vscode.ExtensionContext) {
 	const selector: vscode.DocumentSelector = { language: "nadesiko3", scheme: undefined }
 	const nako3 = new NakoCompiler()
@@ -158,6 +168,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	const diagnosticCollection = vscode.languages.createDiagnosticCollection("nadesiko3")
 
+	// VSCodeの状態に変更があるたびに呼び出す関数。
 	const update = () => {
 		// 別の言語のファイルならファイルが開かれていないとする。
 		const editor = vscode.window.activeTextEditor?.document.languageId === "nadesiko3" ? vscode.window.activeTextEditor : undefined
@@ -203,6 +214,7 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	}
 
+	// 定期的に構文エラーを確認して、あれば波線を引く。
 	{
 		let canceled = false
 		const validateSyntax = async () => {
@@ -222,19 +234,27 @@ export function activate(context: vscode.ExtensionContext) {
 				}
 			}
 			setTimeout(validateSyntax, 500)
+			validateSyntax()
 		}
-		validateSyntax()
+
 		context.subscriptions.push({ dispose() { canceled = true } })
 	}
 
+	// subscriptionsに { dispose(): any } を実装するオブジェクトをpushしておくと、拡張機能の deactivate() 時に自動的に dispose() を呼んでくれる。
 	context.subscriptions.push(
 		diagnosticCollection,
+
+		// エディタの状態に変更があるたびに update() を呼ぶ。
 		vscode.window.onDidChangeActiveTextEditor(() => { update() }),
 		vscode.window.onDidChangeTextEditorOptions(() => { update() }),
 		vscode.workspace.onDidOpenTextDocument(() => { update() }),
-		vscode.workspace.onDidCloseTextDocument((doc) => { diagnosticCollection.delete(doc.uri) }),
 		vscode.workspace.onDidChangeConfiguration(() => { update() }),
 		vscode.workspace.onDidChangeTextDocument((e) => { update() }),
+
+		// エディタ（上のファイル）が閉じられたとき
+		vscode.workspace.onDidCloseTextDocument((doc) => { diagnosticCollection.delete(doc.uri) }),
+
+		// プログラムにマウスカーソルを重ねた時に表示するメッセージを生成する関数を設定する。
 		vscode.languages.registerHoverProvider(selector, {
 			provideHover(document, position) {
 				update()
@@ -250,6 +270,8 @@ export function activate(context: vscode.ExtensionContext) {
 				return new vscode.Hover("```\n" + root.childNodes[0].innerText + "\n```\n\n" + (root.childNodes.length >= 2 ? root.childNodes[1].innerText : ""), new vscode.Range(position.line, token.left, position.line, token.left + token.token.value.length))
 			}
 		}),
+
+		// オートコンプリートのリストを生成する関数を設定する。
 		vscode.languages.registerCompletionItemProvider(selector, {
 			provideCompletionItems(document, position, token, context) {
 				update()
@@ -275,10 +297,11 @@ export function activate(context: vscode.ExtensionContext) {
 				]
 			}
 		}),
+
+		// 動的にシンタックスハイライトするための関数を設定する。
 		vscode.languages.registerDocumentSemanticTokensProvider(selector, {
 			provideDocumentSemanticTokens: async (document) => {
 				const tokensBuilder = new vscode.SemanticTokensBuilder(legend)
-				const id = Math.floor(Math.random() * 100000)
 				if (document !== state?.editor.document) {
 					return
 				}
@@ -299,6 +322,8 @@ export function activate(context: vscode.ExtensionContext) {
 				return tokensBuilder.build()
 			}
 		}, legend),
+
+		// プログラム上に [ファイルを実行] ボタンを表示させる。
 		vscode.languages.registerCodeLensProvider(selector, {
 			provideCodeLenses: (
 				document: vscode.TextDocument,
@@ -318,28 +343,34 @@ export function activate(context: vscode.ExtensionContext) {
 				];
 			}
 		}),
+
+		// [ファイルを実行] ボタンを押したときの動作を設定する。
 		vscode.commands.registerCommand("nadesiko3.runActiveFile", async () => {
+			// ファイルが開かれていないならエラーメッセージを表示して終了。
 			const editor = vscode.window.activeTextEditor
 			if (editor === undefined) {
 				vscode.window.showErrorMessage("ファイルが開かれていません")
 				return
 			}
+
+			// 結果を表示するためのWebviewPanelを生成する。すでに存在すれば前面に出す。
 			if (panel === null) {
 				panel = vscode.window.createWebviewPanel("nadesiko3Output", "なでしこv3: プログラムの出力", vscode.ViewColumn.Beside, {
 					enableScripts: true,
-					localResourceRoots: [vscode.Uri.file(path.join(context.extensionPath, "static"))]
+					localResourceRoots: [vscode.Uri.file(path.join(context.extensionPath, "webview"))]
 				})
-				const staticDir = path.join(context.extensionPath, "static")
-				panel.webview.html = fs.readFileSync(path.join(staticDir, "webview.html")).toString()
-					.replace("{index.css}", panel.webview.asWebviewUri(vscode.Uri.file(path.join(staticDir, "index.css"))).toString())
-					.replace("{webview.js}", panel.webview.asWebviewUri(vscode.Uri.file(path.join(staticDir, "webview.js"))).toString())
-					.replace("{index.js}", panel.webview.asWebviewUri(vscode.Uri.file(path.join(staticDir, "index.js"))).toString())
+				const webviewDir = path.join(context.extensionPath, "webview")
+				panel.webview.html = fs.readFileSync(path.join(webviewDir, "webview.html")).toString()
+					.replace("{index.css}", panel.webview.asWebviewUri(vscode.Uri.file(path.join(webviewDir, "index.css"))).toString())
+					.replace("{webview.js}", panel.webview.asWebviewUri(vscode.Uri.file(path.join(webviewDir, "webview.js"))).toString())
+					.replace("{index.js}", panel.webview.asWebviewUri(vscode.Uri.file(path.join(webviewDir, "index.js"))).toString())
 
 				panel.onDidDispose(() => { panel = null }, null, context.subscriptions)
 			} else {
 				panel.reveal(vscode.ViewColumn.Beside)
 			}
 
+			// プログラムを実行する。
 			try {
 				const code = editor.document.getText()
 				const fileName = editor.document.fileName

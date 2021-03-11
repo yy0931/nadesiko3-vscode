@@ -128,13 +128,34 @@ const loadDependencies = (/** @type {NakoCompiler} */nako3, /** @type {string} *
 		},
 		readJs: (name, token) => {
 			try {
-				return { sync: true, value: () => require(name) } // eslint-disable-line @typescript-eslint/no-unsafe-return
+				return { sync: true, value: () => require(name) }
 			} catch (/** @type {unknown} */err) {
 				throw new NakoImportError(`プラグイン ${name} の取り込みに失敗: ${err instanceof Error ? err.message : err + ''}\n検索したパス: ${log.join(', ')}`, token.line, token.file)
 			}
 		},
 	})
 }
+
+const sleep = (/** @type {number} */ms) => /** @type {Promise<void>} */new Promise((resolve) => setTimeout(resolve, ms))
+exports.sleep = sleep
+
+// 5秒間試してだめだったらエラーを投げる。
+/** @type {<T>(f: () => Promise<T>) => Promise<T>} */
+const retry = async (f) => {
+	const startTime = Date.now()
+	while (true) {
+		try {
+			return await f()
+		} catch (err) {
+			if (Date.now() - startTime < 5000) {
+				await sleep(100)
+				continue
+			}
+			throw err
+		}
+	}
+}
+exports.retry = retry
 
 // 現在フォーカスされているエディタの状態を持つ変数
 /** @type {{
@@ -155,25 +176,6 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 	const selector = { language: "nadesiko3", scheme: undefined }
 	const nako3 = new NakoCompiler()
 	nako3.addPluginObject('PluginNode', PluginNode)
-
-	// 「表示」の動作を上書き
-	nako3.addPluginObject("nadesiko3-vscode", {
-		"表示": {
-			type: "func",
-			josi: [["と", "を", "の"]],
-			fn: (/** @type {any} */s, /** @type {any} */sys) => {
-				if (panel === null) {
-					return
-				}
-				// 文字列の場合はutil.inspectに掛けると''で囲まれてしまうため、そのまま送信
-				if (typeof s === "string") {
-					panel.webview.postMessage({ type: "out", line: s })
-					return
-				}
-				panel.webview.postMessage({ type: "out", line: util.inspect(s, { depth: null }) })
-			}
-		},
-	})
 
 	const diagnosticCollection = vscode.languages.createDiagnosticCollection("nadesiko3")
 
@@ -237,7 +239,6 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 				const diagnostics = /** @type {vscode.Diagnostic[]} */([])
 				const logger = nako3.replaceLogger()
 				logger.addListener('warn', ({ position, level, noColor }) => {
-					console.log(level)
 					if (position.file === file && (level === 'warn' || level === 'error')) {
 						const range = new vscode.Range(...EditorMarkers.fromError(code, { ...position, message: noColor }, (row) => code.split('\n')[row] || ''))
 						diagnostics.push(new vscode.Diagnostic(range, noColor, level === 'error' ? vscode.DiagnosticSeverity.Error : vscode.DiagnosticSeverity.Warning))
@@ -251,9 +252,9 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 				}
 				diagnosticCollection.set(state.editor.document.uri, diagnostics)
 			}
-			setTimeout(validateSyntax, 500)
+			setTimeout(() => { validateSyntax().catch(console.error) }, 500)
 		}
-		validateSyntax()
+		validateSyntax().catch(console.error)
 
 		context.subscriptions.push({ dispose() { canceled = true } })
 	}
@@ -320,7 +321,7 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 		vscode.languages.registerDocumentSemanticTokensProvider(selector, {
 			provideDocumentSemanticTokens: async (document) => {
 				const tokensBuilder = new vscode.SemanticTokensBuilder(legend)
-				if (document !== state?.editor.document) {
+				if (document !== state?.editor.document || !state) {
 					return
 				}
 				if (state.backgroundTokenizer.dirty) {
@@ -361,11 +362,12 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 		}),
 
 		// [ファイルを実行] ボタンを押したときの動作を設定する。
-		vscode.commands.registerCommand("nadesiko3.runActiveFile", async () => {
+		vscode.commands.registerCommand("nadesiko3.runActiveFile", async (/** @type {boolean} */isTest = false) => {
 			// ファイルが開かれていないならエラーメッセージを表示して終了。
 			const editor = vscode.window.activeTextEditor
 			if (editor === undefined) {
 				vscode.window.showErrorMessage("ファイルが開かれていません")
+				if (isTest) { throw new Error('ファイルが開かれていません') }
 				return
 			}
 
@@ -380,25 +382,46 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 					.replace("{index.css}", panel.webview.asWebviewUri(vscode.Uri.file(path.join(webviewDir, "index.css"))).toString())
 					.replace("{webview.js}", panel.webview.asWebviewUri(vscode.Uri.file(path.join(webviewDir, "webview.js"))).toString())
 					.replace("{index.js}", panel.webview.asWebviewUri(vscode.Uri.file(path.join(webviewDir, "index.js"))).toString())
-
 				panel.onDidDispose(() => { panel = null }, null, context.subscriptions)
 			} else {
 				panel.reveal(vscode.ViewColumn.Beside)
 			}
 
-			// プログラムを実行する。
+			// プログラムを実行
+			const logger = nako3.replaceLogger()
+			logger.addListener('warn', ({ html }) => {
+				panel?.webview.postMessage({ type: 'output', html })
+			})
+			const code = editor.document.getText()
+			const fileName = editor.document.fileName
 			try {
-				const code = editor.document.getText()
-				const fileName = editor.document.fileName
-				await loadDependencies(nako3, code, fileName, context.extensionPath, editor.document.isUntitled)
-				nako3.run(code, fileName)
-
-				// 依存ファイルの読み込みによってエラーが解消されうるため、dirtyをtrueにして再度エラーをチェックさせる。
-				if (state !== null) {
-					state.needValidation = true
+				try {
+					await loadDependencies(nako3, code, fileName, context.extensionPath, editor.document.isUntitled)
+				} catch (err) {
+					logger.error(err)
+					throw err
 				}
-			} catch (e) {
-				panel.webview.postMessage({ type: "err", line: e instanceof Error ? e.message : (e + '') })
+				const nakoGlobal = nako3.run(code, fileName)
+				if (isTest) {
+					/** @type {unknown} */
+					let returnValue
+					const d = panel.webview.onDidReceiveMessage((/** @type {unknown} */data) => { returnValue = data }, undefined, context.subscriptions)
+					try {
+						await panel.webview.postMessage('getHTML')
+						// プログラムの実行結果とwebviewに表示されているHTMLを返す。
+						return {
+							log: nakoGlobal.log + '',
+							html: await retry(async () => {
+								if (returnValue === undefined) { throw new Error('returnValue is undefined') }
+								return returnValue
+							}),
+						}
+					} finally {
+						d.dispose()
+					}
+				}
+			} catch (err) { // エラーはloggerから取る。
+				if (isTest) { throw err }
 			}
 		}),
 	)

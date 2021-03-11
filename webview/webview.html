@@ -7,17 +7,8 @@
     <link rel="stylesheet" href="{index.css}">
 </head>
 <body>
-    <div class="output-grid">
-        <div class="label err">
-            コンパイラのメッセージ
-            <span id="err_clear" class="clear-button tooltip-parent"><span class="tooltip">出力をクリアする</span>🚫</span>
-        </div>
-        <pre class="err code-scroll" id="err-scroll"><code id="err"></code></pre>
-        <div class="label out">
-            プログラムの出力
-            <span id="out_clear" class="clear-button tooltip-parent"><span class="tooltip">出力をクリアする</span>🚫</span>
-        </div>
-        <pre class="out code-scroll" id="out-scroll"><code id="out"></code></pre>
+    <button id="clear">出力をクリアする</button>
+    <div id="output">
     </div>
     <script src="{index.js}"></script>
 </body>

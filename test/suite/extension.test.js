@@ -1,25 +1,6 @@
 const vscode = require('vscode')
 const { expect } = require('chai')
-const { legend } = require('../../src/extension')
-
-const sleep = (/** @type {number} */ms) => /** @type {Promise<void>} */new Promise((resolve) => setTimeout(resolve, ms))
-
-// 5秒間試してだめだったらエラーを投げる。
-/** @type {<T>(f: () => Promise<T>) => Promise<T>} */
-const retry = async (f) => {
-    const startTime = Date.now()
-    while (true) {
-        try {
-            return await f()
-        } catch (err) {
-            if (Date.now() - startTime < 5000) {
-                await sleep(100)
-                continue
-            }
-            throw err
-        }
-    }
-}
+const { legend, retry } = require('../../src/extension')
 
 /** @type {<T>(x: T | null | undefined) => T} */
 const notNullish = (x) => x
@@ -47,7 +28,7 @@ describe('一時的なファイル', () => {
                 command: 'nadesiko3.runActiveFile',
             })
         })
-        vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+        await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
     })
     it('シンタックスハイライト', async () => {
         const { document, editor } = await openUntitledFile('「こんにちは」を表示する。\n')
@@ -63,7 +44,7 @@ describe('一時的なファイル', () => {
             const id = legend.tokenTypes.indexOf('string')
             expect(tokens?.data[0 * 5 + 3]).to.equal(id)
         })
-        vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+        await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
     })
     it('シンタックスエラーの表示', async () => {
         const { document } = await openUntitledFile('A=')
@@ -73,7 +54,7 @@ describe('一時的なファイル', () => {
             expect(diagnostics[0].severity).to.equal(vscode.DiagnosticSeverity.Error)
             expect(diagnostics[0].message).to.include('文法エラー')
         })
-        vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+        await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
     })
     it('警告の表示', async () => {
         const { document } = await openUntitledFile('Aを表示')
@@ -83,6 +64,14 @@ describe('一時的なファイル', () => {
             expect(diagnostics[0].severity).to.equal(vscode.DiagnosticSeverity.Warning)
             expect(diagnostics[0].message).to.include('変数 A は定義されていません')
         })
-        vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+        await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+    })
+    it('プログラムの実行', async () => {
+        const { } = await openUntitledFile('1+2を表示\n10を表示')
+        const out = await vscode.commands.executeCommand('nadesiko3.runActiveFile', /* isTest= */true)
+        expect(out.log).to.equal('3\n10')
+        expect(out.html.trim()).to.equal(`<div style="">3</div><div style="">10</div>`)
+        await vscode.commands.executeCommand('workbench.action.closeActiveEditor') // webview
+        await vscode.commands.executeCommand('workbench.action.closeActiveEditor') // editor
     })
 })

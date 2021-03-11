@@ -24,5 +24,8 @@ module.exports = {
         "@typescript-eslint/no-floating-promises": "off",
         "@typescript-eslint/restrict-template-expressions": "off",
         "@typescript-eslint/ban-ts-comment": "off",
+        "no-constant-condition": "off",
+        "@typescript-eslint/no-unsafe-return": "off",
+        "@typescript-eslint/require-await": "off"
     }
 };

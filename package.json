@@ -45,11 +45,10 @@
 			}
 		],
 		"menus": {
-			"editor/title": [
+			"editor/title/run": [
 				{
 					"command": "nadesiko3.runActiveFile",
-					"when": "editorLangId == nadesiko3",
-					"group": "1_run@10"
+					"when": "editorLangId == nadesiko3"
 				}
 			],
 			"commandPalette": [

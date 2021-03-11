@@ -9,7 +9,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [12.x, 14.x]
+        node-version: [12.x]
 
     steps:
     - uses: actions/checkout@v2
@@ -17,6 +17,8 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
-    - run: npm i -g yarn
     - run: yarn
-    - run: yarn build
+    - name: Run tests
+      uses: GabrielBB/xvfb-action@v1.0
+      with:
+        run: yarn test

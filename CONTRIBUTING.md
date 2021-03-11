@@ -6,5 +6,5 @@
 yarn                 # 依存のインストール
 yarn test            # テスト
 VSCodeで開いてF5キー   # デバッグ
-npx vsce package     # パッケージング
+vsce package         # .vsixファイルの生成
 ```

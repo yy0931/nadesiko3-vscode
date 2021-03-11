@@ -1,43 +1,46 @@
-import * as vscode from "vscode"
-import { LanguageFeatures, BackgroundTokenizer, AceDocument, EditorMarkers } from "nadesiko3/src/wnako3_editor"
-import * as NakoCompiler from "nadesiko3/src/nako3"
+const vscode = require("vscode")
+const { LanguageFeatures, BackgroundTokenizer, AceDocument, EditorMarkers } = require("nadesiko3/src/wnako3_editor")
+const NakoCompiler = require("nadesiko3/src/nako3")
 const CNako3 = require("nadesiko3/src/cnako3")
-import * as path from "path"
-import * as fs from "fs"
-import * as util from "util"
-import * as PluginNode from "nadesiko3/src/plugin_node"
-import { NakoImportError } from "nadesiko3/src/nako_errors"
-import * as nodeHTMLParser from "node-html-parser"
+const path = require('path')
+const fs = require('fs')
+const util = require('util')
+const PluginNode = require('nadesiko3/src/plugin_node')
+const { NakoImportError } = require("nadesiko3/src/nako_errors")
+const nodeHTMLParser = require("node-html-parser")
 
 /**
  * ace editor に依存せずにAceと同じ形式のRangeクラスを使う。
  */
 class AceRange {
-	constructor(
-		public readonly startLine: number,
-		public readonly startColumn: number,
-		public readonly endLine: number,
-		public readonly endColumn: number,
-	) { }
+	constructor(/** @type {number} */startLine, /** @type {number} */startColumn, /** @type {number} */endLine, /** @type {number} */endColumn) {
+		/** @public @readonly */this.startLine = startLine
+		/** @public @readonly */this.startColumn = startColumn
+		/** @public @readonly */this.endLine = endLine
+		/** @public @readonly */this.endColumn = endColumn
+	}
 }
 
 /**
  * VSCodeのDocumentをAceのDocumentとして使う。
+ * @implements {AceDocument}
  */
-class DocumentAdapter implements AceDocument {
-	constructor(private readonly editor: vscode.TextEditor) { }
-	getLine(row: number) { return this.editor.document.lineAt(row).text }
+class DocumentAdapter {
+	constructor(/** @type {vscode.TextEditor} */editor) {
+		/** @private @readonly */ this.editor = editor
+	}
+	getLine(/** @type {number} */row) { return this.editor.document.lineAt(row).text }
 	getAllLines() { return this.editor.document.getText().split("\n") }
 	getLength() { return this.editor.document.lineCount }
-	insertInLine(position: { row: number, column: number }, text: string) {
+	insertInLine(/** @type {{ row: number, column: number }} */position, /** @type {string} */text) {
 		this.editor.edit((builder) => { builder.insert(new vscode.Position(position.row, position.column), text) })
 			.then(undefined, (err) => { console.error(err) })
 	}
-	removeInLine(row: number, columnStart: number, columnEnd: number) {
+	removeInLine(/** @type {number} */row, /** @type {number} */columnStart, /** @type {number} */columnEnd) {
 		this.editor.edit((builder) => { builder.delete(new vscode.Range(row, columnStart, row, columnEnd)) })
 			.then(undefined, (err) => { console.error(err) })
 	}
-	replace(range: AceRange, text: string) {
+	replace(/** @type {AceRange} */range, /** @type {string} */text) {
 		this.editor.edit((builder) => { builder.replace(new vscode.Range(range.startLine, range.startColumn, range.endLine, range.endColumn), text) })
 			.then(undefined, (err) => { console.error(err) })
 	}
@@ -51,12 +54,14 @@ class DocumentAdapter implements AceDocument {
 const legend = new vscode.SemanticTokensLegend(
 	["variable", "function", "macro", "comment", "string", "keyword", "number", "operator"], // tokenTypes
 	["readonly", "underline"])  // tokenModifiers。underlineはpackage.jsonでtmlanguageのmarkup.underlineに変換して下線を引いている。
+exports.legend = legend
 
 /**
  * Aceのtoken typeをVSCodeのtoken typeにマップする。[type, modifiers] を返す。返す値はlegendで定義されている必要がある。
+ * @returns {[string, string[]] | null}
  */
-const mapTokenType = (type: string): [string, string[]] | null => {
-	const modifiers = new Array<string>()
+const mapTokenType = (/** @type {string} */type) => {
+	const modifiers = /** @type {Array<string>} */([])
 	if (type.endsWith(".markup.underline")) {
 		type = type.replace(".markup.underline", "")
 		modifiers.push("underline")
@@ -80,7 +85,7 @@ const mapTokenType = (type: string): [string, string[]] | null => {
 }
 
 // `position` の位置にあるトークンを取得する。
-export const getTokenAt = (backgroundTokenizer: BackgroundTokenizer, position: vscode.Position) => {
+const getTokenAt = (/** @type {BackgroundTokenizer} */backgroundTokenizer, /** @type {vscode.Position} */position) => {
 	const tokens = backgroundTokenizer.getTokens(position.line)
 	let left = 0
 	for (let i = 0; i < tokens.length; i++) {
@@ -91,15 +96,16 @@ export const getTokenAt = (backgroundTokenizer: BackgroundTokenizer, position: v
 	}
 	return null
 }
+exports.getTokenAt = getTokenAt
 
 // 依存ファイルを取り込む。コメントを書いた部分以外はCNako3のコードと同じ
 // NOTE: ウェブから依存するファイルをダウンロードできるように変更する場合は、diagnosticsで使うとき、loadDependenciesを呼ばないか、手動で実行されたときに存在した依存ファイルだけをホワイトリストで許可するべき。
-const loadDependencies = (nako3: NakoCompiler, code: string, fileName: string, extensionPath: string, isUntitled: boolean) => {
+const loadDependencies = (/** @type {NakoCompiler} */nako3, /** @type {string} */code, /** @type {string} */fileName, /** @type {string} */extensionPath, /** @type {boolean} */isUntitled) => {
 	const srcDir = path.join(extensionPath, "node_modules/nadesiko3/src")
-	const log = new Array<string>()
+	const log = /** @type {Array<string>} */([])
 	return nako3.loadDependencies(code, fileName, "", {
 		resolvePath: (name, token) => {
-			if (/\.js(\.txt)?$/.test(name) || /^[^\.]*$/.test(name)) {
+			if (/\.js(\.txt)?$/.test(name) || /^[^.]*$/.test(name)) {
 				return { filePath: path.resolve(CNako3.findPluginFile(name, fileName, srcDir, log)), type: 'js' } // 変更: __dirnameがたとえ node: { __dirname: true } を指定したとしても正しい値にならない
 			}
 			if (/\.nako3?(\.txt)?$/.test(name)) {
@@ -122,28 +128,31 @@ const loadDependencies = (nako3: NakoCompiler, code: string, fileName: string, e
 		},
 		readJs: (name, token) => {
 			try {
-				return { sync: true, value: () => eval(`require(${JSON.stringify(name)})`) } // 変更: こうしないとrequireがwebpackに解析されてしまう https://github.com/webpack/webpack/issues/4175#issuecomment-323023911
-			} catch (err) {
-				throw new NakoImportError(`プラグイン ${name} の取り込みに失敗: ${err.message}\n検索したパス: ${log.join(', ')}`, token.line, token.file)
+				return { sync: true, value: () => require(name) } // eslint-disable-line @typescript-eslint/no-unsafe-return
+			} catch (/** @type {unknown} */err) {
+				throw new NakoImportError(`プラグイン ${name} の取り込みに失敗: ${err instanceof Error ? err.message : err + ''}\n検索したパス: ${log.join(', ')}`, token.line, token.file)
 			}
 		},
 	})
 }
 
 // 現在フォーカスされているエディタの状態を持つ変数
-let state: {
+/** @type {{
 	backgroundTokenizer: BackgroundTokenizer
 	editor: vscode.TextEditor
 	listeners: (() => void)[]
 	waitTokenUpdate: () => Promise<void>
 	code: string | null
 	needValidation: boolean
-} | null = null
-let panel: vscode.WebviewPanel | null = null
+} | null} */
+let state = null
+/** @type {vscode.WebviewPanel | null} */
+let panel = null
 
 // 拡張機能が有効化されるとこの関数が呼ばれる。有効化されるタイミングは package.json のactivationEventsで定義される。
-export function activate(context: vscode.ExtensionContext) {
-	const selector: vscode.DocumentSelector = { language: "nadesiko3", scheme: undefined }
+exports.activate = function activate(/** @type {vscode.ExtensionContext} */context) {
+	/** @type {vscode.DocumentSelector} */
+	const selector = { language: "nadesiko3", scheme: undefined }
 	const nako3 = new NakoCompiler()
 	nako3.addPluginObject('PluginNode', PluginNode)
 
@@ -152,7 +161,7 @@ export function activate(context: vscode.ExtensionContext) {
 		"表示": {
 			type: "func",
 			josi: [["と", "を", "の"]],
-			fn: (s: any, sys: any) => {
+			fn: (/** @type {any} */s, /** @type {any} */sys) => {
 				if (panel === null) {
 					return
 				}
@@ -189,7 +198,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 		// 別のエディタをフォーカスしたとき
 		if (state?.editor !== editor) {
-			let listeners = new Array<() => void>()
+			let listeners = /** @type {Array<() => void>} */([])
 			state = {
 				backgroundTokenizer: new BackgroundTokenizer(
 					new DocumentAdapter(editor),
@@ -200,7 +209,7 @@ export function activate(context: vscode.ExtensionContext) {
 				),
 				editor,
 				listeners,
-				waitTokenUpdate: () => new Promise<void>((resolve) => { listeners.push(() => { resolve() }) }),
+				waitTokenUpdate: () => /** @type {Promise<void>} */(new Promise((resolve) => { listeners.push(() => { resolve() }) })),
 				code: null,
 				needValidation: true,
 			}
@@ -230,11 +239,11 @@ export function activate(context: vscode.ExtensionContext) {
 					diagnosticCollection.set(state.editor.document.uri, [])
 				} catch (err) {
 					const range = new vscode.Range(...EditorMarkers.fromError(code, err, (row) => code.split('\n')[row] || ''))
-					diagnosticCollection.set(state.editor.document.uri, [new vscode.Diagnostic(range, err.message, vscode.DiagnosticSeverity.Error)])
+					diagnosticCollection.set(state.editor.document.uri, [new vscode.Diagnostic(range, err instanceof Error ? err.message : (err + ''), vscode.DiagnosticSeverity.Error)])
 				}
 			}
-			setTimeout(validateSyntax, 500)
-			validateSyntax()
+			setTimeout(() => { validateSyntax().catch((err) => { console.error(err) }) }, 500)
+			validateSyntax().catch((err) => { console.error(err) })
 		}
 
 		context.subscriptions.push({ dispose() { canceled = true } })
@@ -325,10 +334,8 @@ export function activate(context: vscode.ExtensionContext) {
 
 		// プログラム上に [ファイルを実行] ボタンを表示させる。
 		vscode.languages.registerCodeLensProvider(selector, {
-			provideCodeLenses: (
-				document: vscode.TextDocument,
-				token: vscode.CancellationToken,
-			): vscode.ProviderResult<vscode.CodeLens[]> => {
+			/** @returns {vscode.ProviderResult<vscode.CodeLens[]>} */
+			provideCodeLenses: (/** @type {vscode.TextDocument} */document, /** @type {vscode.CancellationToken} */token) => {
 				if (document.getText().length <= 2) {
 					return []
 				}
@@ -382,13 +389,13 @@ export function activate(context: vscode.ExtensionContext) {
 					state.needValidation = true
 				}
 			} catch (e) {
-				panel.webview.postMessage({ type: "err", line: e.message })
+				panel.webview.postMessage({ type: "err", line: e instanceof Error ? e.message : (e + '') })
 			}
 		}),
 	)
 }
 
-export function deactivate() {
+exports.deactivate = function deactivate() {
 	state?.backgroundTokenizer.dispose()
 	panel?.dispose()
 }

@@ -1,0 +1,13 @@
+{
+	"compilerOptions": {
+		"module": "commonJS",
+		"target": "es2019",
+		"checkJs": true,
+		"strict": true
+	},
+	"include": [
+		"src",
+		"test",
+		"node_modules/nadesiko3/src"
+	]
+}

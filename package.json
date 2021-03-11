@@ -18,7 +18,7 @@
 	"activationEvents": [
 		"onLanguage:nadesiko3"
 	],
-	"main": "./dist/extension.js",
+	"main": "./src/extension.js",
 	"contributes": {
 		"configurationDefaults": {
 			"[nadesiko3]": {
@@ -29,7 +29,9 @@
 			{
 				"language": "nadesiko3",
 				"scopes": {
-					"*.underline": ["markup.underline"]
+					"*.underline": [
+						"markup.underline"
+					]
 				}
 			}
 		],
@@ -67,35 +69,26 @@
 		]
 	},
 	"scripts": {
-		"prepare": "cd node_modules/nadesiko3 && npm i && npm run build:command && cd ../..",
-		"vscode:prepublish": "yarn build",
-		"build": "webpack --mode production --bail",
-		"webpack": "webpack --mode development",
-		"webpack-dev": "webpack --mode development --watch",
-		"test": "TS_NODE_FILES=\"true\" mocha -r ts-node/register 'src/**/*.test.ts'",
-		"package": "vsce package"
+		"prepare": "cd node_modules/nadesiko3 && yarn build:command && cd ../..",
+		"test": "npx eslint src/**/*.js && node ./test/runTest.js"
 	},
 	"devDependencies": {
-		"@types/chai": "^4.2.14",
-		"@types/mocha": "^8.2.0",
-		"@types/node": "^14.14.22",
-		"chai": "^4.2.0",
+		"@types/chai": "^4.2.15",
+		"@types/glob": "^7.1.3",
+		"@types/mocha": "^8.0.4",
+		"@types/node": "^12.11.7",
+		"@types/vscode": "^1.53.0",
+		"@typescript-eslint/eslint-plugin": "^4.17.0",
+		"@typescript-eslint/parser": "^4.17.0",
+		"chai": "^4.3.0",
+		"glob": "^7.1.6",
 		"mocha": "^8.2.1",
-		"rimraf": "^3.0.2",
-		"string-replace-loader": "^3.0.1",
-		"ts-loader": "^8.0.17",
-		"ts-node": "^9.1.1",
-		"typescript": "^4.1.3",
-		"vsce": "^1.85.0",
-		"webpack": "^5.23.0",
-		"webpack-cli": "^4.5.0",
-		"webpack-filter-warnings-plugin": "^1.2.1"
+		"typescript": "^4.2.3",
+		"vscode-test": "^1.5.0"
 	},
 	"dependencies": {
-		"@types/vscode": "^1.53.0",
-		"js-beautify": "^1.13.5",
-		"json5": "^2.2.0",
+		"eslint": "^7.21.0",
 		"nadesiko3": "git+https://github.com/yy0931/nadesiko3#66e0b203754430edcb1c0095cd27af85600cda0c",
-		"node-html-parser": "^2.1.0"
+		"node-html-parser": "^3.0.3"
 	}
 }

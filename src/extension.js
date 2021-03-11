@@ -321,12 +321,9 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 		vscode.languages.registerDocumentSemanticTokensProvider(selector, {
 			provideDocumentSemanticTokens: async (document) => {
 				const tokensBuilder = new vscode.SemanticTokensBuilder(legend)
-				if (document !== state?.editor.document || !state) {
-					return
-				}
-				if (state.backgroundTokenizer.dirty) {
-					await state.waitTokenUpdate()
-				}
+				if (document !== state?.editor.document) { return }
+				if (state.backgroundTokenizer.dirty) { await state.waitTokenUpdate() }
+				if (document !== state?.editor.document) { return } // await中に別のエディタに切り替わった場合
 				for (let line = 0; line < document.lineCount; line++) {
 					let character = 0
 					const tokens = state.backgroundTokenizer.getTokens(line) || []

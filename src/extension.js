@@ -233,18 +233,27 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 			if (state !== null && state.needValidation) {
 				state.needValidation = false
 				const code = state.editor.document.getText()
+				const file = state.editor.document.fileName
+				const diagnostics = /** @type {vscode.Diagnostic[]} */([])
+				const logger = nako3.replaceLogger()
+				logger.addListener('warn', ({ position, level, noColor }) => {
+					console.log(level)
+					if (position.file === file && (level === 'warn' || level === 'error')) {
+						const range = new vscode.Range(...EditorMarkers.fromError(code, { ...position, message: noColor }, (row) => code.split('\n')[row] || ''))
+						diagnostics.push(new vscode.Diagnostic(range, noColor, level === 'error' ? vscode.DiagnosticSeverity.Error : vscode.DiagnosticSeverity.Warning))
+					}
+				})
 				try {
-					await loadDependencies(nako3, code, state.editor.document.fileName, context.extensionPath, state.editor.document.isUntitled)
-					nako3.parse(code, state.editor.document.fileName)
-					diagnosticCollection.set(state.editor.document.uri, [])
+					await loadDependencies(nako3, code, file, context.extensionPath, state.editor.document.isUntitled)
+					nako3.compile(code, file, false)
 				} catch (err) {
-					const range = new vscode.Range(...EditorMarkers.fromError(code, err, (row) => code.split('\n')[row] || ''))
-					diagnosticCollection.set(state.editor.document.uri, [new vscode.Diagnostic(range, err instanceof Error ? err.message : (err + ''), vscode.DiagnosticSeverity.Error)])
+					nako3.logger.error(err)
 				}
+				diagnosticCollection.set(state.editor.document.uri, diagnostics)
 			}
-			setTimeout(() => { validateSyntax().catch((err) => { console.error(err) }) }, 500)
-			validateSyntax().catch((err) => { console.error(err) })
+			setTimeout(validateSyntax, 500)
 		}
+		validateSyntax()
 
 		context.subscriptions.push({ dispose() { canceled = true } })
 	}
@@ -382,7 +391,7 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 				const code = editor.document.getText()
 				const fileName = editor.document.fileName
 				await loadDependencies(nako3, code, fileName, context.extensionPath, editor.document.isUntitled)
-				nako3.runReset(code, fileName)
+				nako3.run(code, fileName)
 
 				// 依存ファイルの読み込みによってエラーが解消されうるため、dirtyをtrueにして再度エラーをチェックさせる。
 				if (state !== null) {

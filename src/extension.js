@@ -22,7 +22,23 @@ class AceRange {
 }
 
 /**
- * VSCodeのDocumentをAceのDocumentとして使う。
+ * vscode.TextDocument をAceのDocumentとして使う。
+ * @implements {AceDocument}
+ */
+class ReadonlyDocumentAdapter {
+	constructor(/** @type {vscode.TextDocument} */document) {
+		/** @private @readonly */ this.document = document
+	}
+	getLine(/** @type {number} */row) { return this.document.lineAt(row).text }
+	getAllLines() { return this.document.getText().split("\n") }
+	getLength() { return this.document.lineCount }
+	insertInLine(/** @type {{ row: number, column: number }} */position, /** @type {string} */text) { throw new Error("not implemented") }
+	removeInLine(/** @type {number} */row, /** @type {number} */columnStart, /** @type {number} */columnEnd) { throw new Error("not implemented") }
+	replace(/** @type {AceRange} */range, /** @type {string} */text) { throw new Error("not implemented") }
+}
+
+/**
+ * vscode.TextEditor をAceのDocumentとして使う。
  * @implements {AceDocument}
  */
 class DocumentAdapter {
@@ -246,6 +262,7 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 				})
 				try {
 					await loadDependencies(nako3, code, file, context.extensionPath, state.editor.document.isUntitled)
+					nako3.reset()
 					nako3.compile(code, file, false)
 				} catch (err) {
 					nako3.logger.error(err)
@@ -339,32 +356,45 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 			}
 		}, legend),
 
-		// プログラム上に [ファイルを実行] ボタンを表示させる。
+		// プログラム上にボタンを表示させる。
 		vscode.languages.registerCodeLensProvider(selector, {
 			/** @returns {vscode.ProviderResult<vscode.CodeLens[]>} */
 			provideCodeLenses: (/** @type {vscode.TextDocument} */document, /** @type {vscode.CancellationToken} */token) => {
-				if (document.getText().length <= 2) {
-					return []
+				const lens = /** @type {vscode.CodeLens[]} */([])
+				for (const v of LanguageFeatures.getCodeLens(new ReadonlyDocumentAdapter(document))) {
+					lens.push(new vscode.CodeLens(
+						new vscode.Range(v.start.row, 0, v.start.row, 0),
+						{
+							title: v.command.title,
+							command: "nadesiko3.runActiveFile",
+							arguments: [v.command.arguments[0]],
+						},
+					))
 				}
-				return [
-					new vscode.CodeLens(
+				if (document.getText().length >= 3) {
+					lens.push(new vscode.CodeLens(
 						new vscode.Range(0, 0, 0, 0),
 						{
 							title: "$(play) ファイルを実行",
 							command: "nadesiko3.runActiveFile",
 						},
-					),
-				];
+					))
+				}
+				return lens
 			}
 		}),
 
+		vscode.commands.registerCommand("nadesiko3.testActiveFile", async () => {
+			await vscode.commands.executeCommand("nadesiko3.runActiveFile", true)
+		}),
+
 		// [ファイルを実行] ボタンを押したときの動作を設定する。
-		vscode.commands.registerCommand("nadesiko3.runActiveFile", async (/** @type {boolean} */isTest = false) => {
+		vscode.commands.registerCommand("nadesiko3.runActiveFile", async (/** @type {string | boolean} */test = false, /** @type {boolean} */vscodeTest = false) => {
 			// ファイルが開かれていないならエラーメッセージを表示して終了。
 			const editor = vscode.window.activeTextEditor
 			if (editor === undefined) {
 				vscode.window.showErrorMessage("ファイルが開かれていません")
-				if (isTest) { throw new Error('ファイルが開かれていません') }
+				if (vscodeTest) { throw new Error('ファイルが開かれていません') }
 				return
 			}
 
@@ -398,8 +428,15 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 					logger.error(err)
 					throw err
 				}
-				const nakoGlobal = nako3.run(code, fileName)
-				if (isTest) {
+				let nakoGlobal
+				if (typeof test === "string") {
+					nakoGlobal = nako3.test(code, fileName, "", test)
+				} else if (test) {
+					nakoGlobal = nako3.test(code, fileName)
+				} else {
+					nakoGlobal = nako3.run(code, fileName)
+				}
+				if (vscodeTest) {
 					/** @type {unknown} */
 					let returnValue
 					const d = panel.webview.onDidReceiveMessage((/** @type {unknown} */data) => { returnValue = data }, undefined, context.subscriptions)
@@ -418,7 +455,7 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 					}
 				}
 			} catch (err) { // エラーはloggerから取る。
-				if (isTest) { throw err }
+				if (vscodeTest) { throw err }
 			}
 		}),
 	)

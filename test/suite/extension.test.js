@@ -68,7 +68,7 @@ describe('一時的なファイル', () => {
     })
     it('プログラムの実行', async () => {
         const { } = await openUntitledFile('1+2を表示\n10を表示')
-        const out = await vscode.commands.executeCommand('nadesiko3.runActiveFile', /* isTest= */true)
+        const out = await vscode.commands.executeCommand('nadesiko3.runActiveFile', false, /* vscodeTest= */true)
         expect(out.log).to.equal('3\n10')
         expect(out.html.trim()).to.equal(`<div style="">3</div><div style="">10</div>`)
         await vscode.commands.executeCommand('workbench.action.closeActiveEditor') // webview

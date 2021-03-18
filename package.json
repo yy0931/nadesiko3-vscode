@@ -2,7 +2,7 @@
 	"name": "nadesiko3-vscode",
 	"displayName": "日本語プログラミング言語 なでしこv3",
 	"description": "",
-	"version": "1.13.1",
+	"version": "1.14.0",
 	"license": "MIT",
 	"publisher": "yy0931",
 	"repository": {
@@ -64,6 +64,12 @@
 				"title": "Run Active File",
 				"category": "Nadesiko3",
 				"icon": "$(play)"
+			},
+			{
+				"command": "nadesiko3.testActiveFile",
+				"title": "Test Active File",
+				"category": "Nadesiko3",
+				"icon": "$(testing-run-icon)"
 			}
 		]
 	},

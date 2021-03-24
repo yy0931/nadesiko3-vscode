@@ -389,7 +389,11 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 		}),
 
 		// [ファイルを実行] ボタンを押したときの動作を設定する。
-		vscode.commands.registerCommand("nadesiko3.runActiveFile", async (/** @type {string | boolean} */test = false, /** @type {boolean} */vscodeTest = false) => {
+		vscode.commands.registerCommand("nadesiko3.runActiveFile", async (/** @type {string | boolean | vscode.ExtensionContext} */test = false, /** @type {boolean} */vscodeTest = false) => {
+			// menusのボタンから実行すると第一引数にExtensionContextが渡される。
+			if (typeof test === "object") {
+				test = false
+			}
 			// ファイルが開かれていないならエラーメッセージを表示して終了。
 			const editor = vscode.window.activeTextEditor
 			if (editor === undefined) {

@@ -1,7 +1,8 @@
 const vscode = require('vscode')
 const { expect } = require('chai')
-const { legend, retry, readDocFile } = require('../../src/extension')
+const { legend, retry } = require('../../src/extension')
 const path = require('path')
+const docs = require('../../src/docs')
 
 /** @type {<T>(x: T | null | undefined) => T} */
 const notNullish = (x) => x
@@ -76,6 +77,6 @@ describe('一時的なファイル', () => {
         await vscode.commands.executeCommand('workbench.action.closeActiveEditor') // editor
     })
     it('ドキュメントの表示', () => {
-        expect(readDocFile(path.join(__dirname, '../../'), 'CSV取得', 'plugin_csv')).to.not.null
+        expect(docs['plugin_csv']['CSV取得']).to.not.null
     })
 })

@@ -8,6 +8,7 @@ const util = require('util')
 const PluginNode = require('nadesiko3/src/plugin_node')
 const { NakoImportError } = require("nadesiko3/src/nako_errors")
 const nodeHTMLParser = require("node-html-parser")
+const docs = require('./docs')
 
 /**
  * ace editor に依存せずにAceと同じ形式のRangeクラスを使う。
@@ -173,43 +174,7 @@ const retry = async (f) => {
 }
 exports.retry = retry
 
-const readDocFile = (/** @type {string} */extensionPath, /** @type {string} */name, /** @type {string} */pluginName) => {
-	if (name.includes('/') || pluginName.includes('/')) {
-		return null  // 一応
-	}
-	const pluginNameSnakeCase = pluginName.replace(/[A-Z]/g, (c) => '_' + c.toLowerCase()).replace(/^_+/, "")
-	const docPath = path.join(extensionPath, `node_modules/nadesiko3doc/data/${pluginNameSnakeCase}/${name}.txt`)
-	if (!fs.existsSync(docPath)) {
-		return null
-	}
-	try {
-		let text = fs.readFileSync(docPath).toString()
-		if (text.includes(`{{{\n# 準備中\n}}}`)) {
-			return null
-		}
-
-		text = text
-			// コードブロック
-			.replace(/^\{\{\{.*$/gm, '``````')
-			.replace(/\}\}\}/g, '``````')
-			// 最初の見出し
-			.replace(/^●『\[\[[^\]]+\]\]』の詳しい解説/m, '')
-			// 見出し
-			.replace(/^▲/gm, '### ')
-			// リンク
-			.replace(/\[\[([^:]+):([^/]+)\/([^\]]+)\]\]/g, (_, linkText, pluginName, name) => {
-				return `[${linkText}](https://nadesi.com/v3/doc/index.php?${encodeURIComponent(pluginName + '/' + name)})`
-			})
-			.replace(/\[\[([^/]+)\/([^\]]+)\]\]/g, (_, pluginName, name) => {
-				return `[${pluginName}/${name}](https://nadesi.com/v3/doc/index.php?${encodeURIComponent(pluginName + '/' + name)})`
-			})
-		return text
-	} catch (e) {
-		console.error(e)
-		return null
-	}
-}
-exports.readDocFile = readDocFile
+const toSnakeCase = (/** @type {string} */s) => s.replace(/[A-Z]/g, (c) => '_' + c.toLowerCase()).replace(/^_+/, "")
 
 // 現在フォーカスされているエディタの状態を持つ変数
 /** @type {{
@@ -344,9 +309,9 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 				const signature = root.childNodes[0].innerText
 				const pluginName = root.childNodes.length >= 2 ? root.childNodes[1].innerText : ""
 				const name = signature.lastIndexOf('）') === -1 ? signature : signature.slice(signature.lastIndexOf('）') + 1)
-				const doc = readDocFile(context.extensionPath, name, pluginName)
+				const doc = docs[toSnakeCase(pluginName)]?.[name]
 				return new vscode.Hover(
-					"```\n" + signature + "\n```\n\n" + pluginName + (doc === null ? '' : '\n\n---\n\n' + doc),
+					"```\n" + signature + "\n```\n\n" + pluginName + (doc ? '\n\n---\n\n' + doc : ''),
 					new vscode.Range(position.line, token.left, position.line, token.left + token.token.value.length),
 				)
 			}
@@ -370,8 +335,8 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 					...LanguageFeatures.getCompletionItems(position.line, prefix, nako3, state.backgroundTokenizer).map((item) => {
 						const completion = new vscode.CompletionItem(item.caption, item.meta === '変数' ? vscode.CompletionItemKind.Variable : vscode.CompletionItemKind.Function)
 						completion.insertText = item.value
-						const doc = readDocFile(context.extensionPath, item.value, item.meta)
-						if (doc !== null) {
+						const doc = docs[toSnakeCase(item.meta)]?.[item.value]
+						if (doc) {
 							completion.documentation = new vscode.MarkdownString(doc)
 						}
 						completion.detail = item.meta

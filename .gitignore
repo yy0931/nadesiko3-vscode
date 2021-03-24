@@ -10,3 +10,4 @@ log.txt
 .cache/
 dist/
 example/**
+/src/docs.js

@@ -3136,6 +3136,10 @@ nadesiko3-sqlite3sync@0.0.1:
     readline-sync "^1.4.9"
     sendkeys-js "0.0.4"
 
+"nadesiko3doc@git+https://github.com/kujirahand/nadesiko3doc#557dd9d0b475edb4af6823dac12d7785fd451bf4":
+  version "0.0.0"
+  resolved "git+https://github.com/kujirahand/nadesiko3doc#557dd9d0b475edb4af6823dac12d7785fd451bf4"
+
 nanoid@3.1.20:
   version "3.1.20"
   resolved "https://registry.yarnpkg.com/nanoid/-/nanoid-3.1.20.tgz#badc263c6b1dcf14b71efaa85f6ab4c1d6cfc788"

@@ -2,7 +2,7 @@
 	"name": "nadesiko3-vscode",
 	"displayName": "日本語プログラミング言語 なでしこv3",
 	"description": "",
-	"version": "1.14.2",
+	"version": "1.15.0",
 	"license": "MIT",
 	"publisher": "yy0931",
 	"repository": {
@@ -97,6 +97,7 @@
 	"dependencies": {
 		"eslint": "^7.21.0",
 		"nadesiko3": "git+https://github.com/kujirahand/nadesiko3#b2d1e6229f8a640bcd052ee81ed115b78325bf1d",
+		"nadesiko3doc": "git+https://github.com/kujirahand/nadesiko3doc#557dd9d0b475edb4af6823dac12d7785fd451bf4",
 		"node-html-parser": "^3.0.3"
 	}
 }

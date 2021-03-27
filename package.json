@@ -89,7 +89,7 @@
 		"chai": "^4.3.0",
 		"glob": "^7.1.6",
 		"mocha": "^8.2.1",
-		"nadesiko3doc": "git+https://github.com/kujirahand/nadesiko3doc#557dd9d0b475edb4af6823dac12d7785fd451bf4",
+		"nadesiko3doc": "git+https://github.com/kujirahand/nadesiko3doc",
 		"semver": "^7.3.4",
 		"typescript": "^4.2.3",
 		"vsce": "^1.87.0",

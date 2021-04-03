@@ -11,15 +11,19 @@ module.exports = class ExtensionNako3Compiler extends NakoCompiler {
         this.addPluginObject('PluginNode', PluginNode)
     }
 
+    static getPluginDirectory(/** @type {string} */extensionPath) {
+        return path.join(extensionPath, "node_modules/nadesiko3/src")
+    }
+
     // 依存ファイルを取り込む。コメントを書いた部分以外はCNako3のコードと同じ
     // NOTE: ウェブから依存するファイルをダウンロードできるように変更する場合は、diagnosticsで使うとき、loadDependenciesを呼ばないか、手動で実行されたときに存在した依存ファイルだけをホワイトリストで許可するべき。
     __loadDependencies(/** @type {string} */code, /** @type {string} */fileName, /** @type {string} */extensionPath, /** @type {boolean} */isUntitled) {
-        const srcDir = path.join(extensionPath, "node_modules/nadesiko3/src")
+        const pluginDir = ExtensionNako3Compiler.getPluginDirectory(extensionPath)
         const log = /** @type {Array<string>} */([])
         return this.loadDependencies(code, fileName, "", {
             resolvePath: (name, token) => {
                 if (/\.js(\.txt)?$/.test(name) || /^[^.]*$/.test(name)) {
-                    return { filePath: path.resolve(CNako3.findPluginFile(name, fileName, srcDir, log)), type: 'js' }
+                    return { filePath: path.resolve(CNako3.findPluginFile(name, fileName, pluginDir, log)), type: 'js' }
                 }
                 if (/\.nako3?(\.txt)?$/.test(name)) {
                     if (path.isAbsolute(name)) {

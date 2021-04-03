@@ -1,5 +1,6 @@
 const vscode = require("vscode")
-const { LanguageFeatures, BackgroundTokenizer, AceDocument, EditorMarkers } = require("nadesiko3/src/wnako3_editor")
+const { LanguageFeatures, BackgroundTokenizer, EditorMarkers } = require("nadesiko3/src/wnako3_editor")
+const { getIndent } = require("nadesiko3/src/nako_indent")
 const path = require('path')
 const fs = require('fs')
 const nodeHTMLParser = require("node-html-parser")
@@ -242,38 +243,81 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 				if (state === null) {
 					return []
 				}
-				const prefix = LanguageFeatures.getCompletionPrefix(document.lineAt(position.line).text, state.nako3)
-				return [
-					...LanguageFeatures.getSnippets(document.getText()).map((item) => {
-						const snippet = new vscode.CompletionItem(item.caption, vscode.CompletionItemKind.Snippet)
-						snippet.detail = item.meta
-						snippet.insertText = new vscode.SnippetString(item.snippet)
-						return snippet
-					}),
-					...LanguageFeatures.getCompletionItems(position.line, prefix, state.nako3, state.backgroundTokenizer).map((item) => {
-						const completion = new vscode.CompletionItem(item.caption, item.meta === '変数' ? vscode.CompletionItemKind.Variable : vscode.CompletionItemKind.Function)
-						completion.insertText = item.value
-						const doc = docs[toSnakeCase(item.meta)]?.[item.value]
-						if (doc) {
-							completion.documentation = new vscode.MarkdownString(doc)
+				const safeReaddirSync = (/** @type {string} */filepath) => {
+					try {
+						return fs.readdirSync(filepath)
+					} catch (e) {
+						console.log(e)
+						return []
+					}
+				}
+
+				const left = document.lineAt(position.line).text.slice(0, position.character)
+				// 行が"！「"で始まってカーソルより左に"」"が無いなら、ファイル名を補完する。
+				const indent = getIndent(left)
+				if ((left.slice(indent.length).startsWith("!「") || left.slice(indent.length).startsWith("！「")) && !left.includes("」")) {
+					const prefix = left.slice(indent.length + 2)
+					if ((/^\.\.?(\/|\\)/.test(prefix)) && !state.editor.document.isUntitled) {
+						const items = /** @type {vscode.CompletionItem[]} */([])
+
+						// prefix="./" のとき basename="", range=[2, 2], dirname="./"
+						// prefix="./foo/bar" のとき basename="bar", range=[6, 9], dirname="./foo"
+						// prefix="./foo/" のとき basename="", range=[6, 6], dirname="./foo"
+						const basename = (prefix.endsWith("/") || prefix.endsWith("\\")) ? "" : path.basename(prefix)
+						const range = new vscode.Range(position.line, position.character - basename.length, position.line, position.character)
+						const dirname = path.join(path.dirname(state.editor.document.fileName), (prefix.endsWith("/") || prefix.endsWith("\\")) ? prefix : path.dirname(prefix))
+
+						for (const basename of safeReaddirSync(dirname)) {
+							if (fs.statSync(path.join(dirname, basename)).isDirectory()) {
+								const item = new vscode.CompletionItem(basename, vscode.CompletionItemKind.Folder)
+								item.range = range
+								items.push(item)
+							} else {
+								const item = new vscode.CompletionItem(basename, vscode.CompletionItemKind.File)
+								item.range = range
+								items.push(item)
+							}
 						}
-						completion.detail = item.meta
-						completion.filterText = item.value
-						completion.range = new vscode.Range(position.line, position.character - prefix.length, position.line, position.character)
-						return completion
-					})
-				]
+						return items
+					} else {
+						return safeReaddirSync(ExtensionNako3Compiler.getPluginDirectory(context.extensionPath))
+							.filter((f) => f.startsWith("plugin_") && f.endsWith(".js"))
+							.map((v) => new vscode.CompletionItem(v.replace(/\.js$/, ''), vscode.CompletionItemKind.Module))
+					}
+				} else {
+					const prefix = LanguageFeatures.getCompletionPrefix(left, state.nako3)
+					console.log(`B: ${prefix}`)
+					return [
+						...LanguageFeatures.getSnippets(document.getText()).map((item) => {
+							const snippet = new vscode.CompletionItem(item.caption, vscode.CompletionItemKind.Snippet)
+							snippet.detail = item.meta
+							snippet.insertText = new vscode.SnippetString(item.snippet)
+							return snippet
+						}),
+						...LanguageFeatures.getCompletionItems(position.line, prefix, state.nako3, state.backgroundTokenizer).map((item) => {
+							const completion = new vscode.CompletionItem(item.caption, item.meta === '変数' ? vscode.CompletionItemKind.Variable : vscode.CompletionItemKind.Function)
+							completion.insertText = item.value
+							const doc = docs[toSnakeCase(item.meta)]?.[item.value]
+							if (doc) {
+								completion.documentation = new vscode.MarkdownString(doc)
+							}
+							completion.detail = item.meta
+							completion.filterText = item.value
+							completion.range = new vscode.Range(position.line, position.character - prefix.length, position.line, position.character)
+							return completion
+						})
+					]
+				}
 			}
 		}),
 
 		// 動的にシンタックスハイライトするための関数を設定する。
 		vscode.languages.registerDocumentSemanticTokensProvider(selector, {
 			provideDocumentSemanticTokens: async (document) => {
-				console.debug(`provideDocumentSemanticTokens`)
 				const tokensBuilder = new vscode.SemanticTokensBuilder(legend)
 				update()
-				if (document !== state?.editor.document) { console.debug(`document ${document.uri} is not active`); return }
-				if (state.backgroundTokenizer.dirty) { console.debug("waiting tokenization..."); await state.waitTokenUpdate(); console.debug("resolved") }
+				if (document !== state?.editor.document) { return }
+				if (state.backgroundTokenizer.dirty) { await state.waitTokenUpdate() }
 				if (document !== state?.editor.document) { return } // await中に別のエディタに切り替わった場合
 				for (let line = 0; line < document.lineCount; line++) {
 					let character = 0
@@ -286,7 +330,6 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 						character += token.value.length
 					}
 				}
-				console.debug("return")
 				return tokensBuilder.build()
 			}
 		}, legend),

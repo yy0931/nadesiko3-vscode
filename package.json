@@ -97,7 +97,7 @@
 	},
 	"dependencies": {
 		"eslint": "^7.21.0",
-		"nadesiko3": "git+https://github.com/yy0931/nadesiko3#74f061c9b87836b4d8ce7d49599dd700ff8d027d",
+		"nadesiko3": "git+https://github.com/yy0931/nadesiko3#b4c4b0a723f1af05f5b9f63accd706cdcfbbf8a2",
 		"node-html-parser": "^3.0.3"
 	}
 }

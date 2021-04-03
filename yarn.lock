@@ -3126,9 +3126,9 @@ nadesiko3-sqlite3sync@0.0.1:
   dependencies:
     sqlite-sync "^0.3.9"
 
-"nadesiko3@git+https://github.com/yy0931/nadesiko3#74f061c9b87836b4d8ce7d49599dd700ff8d027d":
+"nadesiko3@git+https://github.com/yy0931/nadesiko3#b4c4b0a723f1af05f5b9f63accd706cdcfbbf8a2":
   version "3.1.24"
-  resolved "git+https://github.com/yy0931/nadesiko3#74f061c9b87836b4d8ce7d49599dd700ff8d027d"
+  resolved "git+https://github.com/yy0931/nadesiko3#b4c4b0a723f1af05f5b9f63accd706cdcfbbf8a2"
   dependencies:
     body-parser "^1.19.0"
     browserslist "^4.16.3"
@@ -3153,7 +3153,7 @@ nadesiko3-sqlite3sync@0.0.1:
 
 "nadesiko3doc@git+https://github.com/kujirahand/nadesiko3doc":
   version "0.0.0"
-  resolved "git+https://github.com/kujirahand/nadesiko3doc#a0a901f8888d1247d28a0a3d9fe7f6557bf7ba1f"
+  resolved "git+https://github.com/kujirahand/nadesiko3doc#42c41833f2930b1541376d6ebd6c20a6c2e5f32a"
 
 nanoid@3.1.20:
   version "3.1.20"

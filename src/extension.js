@@ -1,67 +1,11 @@
 const vscode = require("vscode")
 const { LanguageFeatures, BackgroundTokenizer, AceDocument, EditorMarkers } = require("nadesiko3/src/wnako3_editor")
-const NakoCompiler = require("nadesiko3/src/nako3")
-const CNako3 = require("nadesiko3/src/cnako3")
 const path = require('path')
 const fs = require('fs')
-const util = require('util')
-const PluginNode = require('nadesiko3/src/plugin_node')
-const { NakoImportError } = require("nadesiko3/src/nako_errors")
 const nodeHTMLParser = require("node-html-parser")
 const docs = require('./docs')
-
-/**
- * ace editor に依存せずにAceと同じ形式のRangeクラスを使う。
- */
-class AceRange {
-	constructor(/** @type {number} */startLine, /** @type {number} */startColumn, /** @type {number} */endLine, /** @type {number} */endColumn) {
-		/** @public @readonly */this.startLine = startLine
-		/** @public @readonly */this.startColumn = startColumn
-		/** @public @readonly */this.endLine = endLine
-		/** @public @readonly */this.endColumn = endColumn
-	}
-}
-
-/**
- * vscode.TextDocument をAceのDocumentとして使う。
- * @implements {AceDocument}
- */
-class ReadonlyDocumentAdapter {
-	constructor(/** @type {vscode.TextDocument} */document) {
-		/** @private @readonly */ this.document = document
-	}
-	getLine(/** @type {number} */row) { return this.document.lineAt(row).text }
-	getAllLines() { return this.document.getText().split("\n") }
-	getLength() { return this.document.lineCount }
-	insertInLine(/** @type {{ row: number, column: number }} */position, /** @type {string} */text) { throw new Error("not implemented") }
-	removeInLine(/** @type {number} */row, /** @type {number} */columnStart, /** @type {number} */columnEnd) { throw new Error("not implemented") }
-	replace(/** @type {AceRange} */range, /** @type {string} */text) { throw new Error("not implemented") }
-}
-
-/**
- * vscode.TextEditor をAceのDocumentとして使う。
- * @implements {AceDocument}
- */
-class DocumentAdapter {
-	constructor(/** @type {vscode.TextEditor} */editor) {
-		/** @private @readonly */ this.editor = editor
-	}
-	getLine(/** @type {number} */row) { return this.editor.document.lineAt(row).text }
-	getAllLines() { return this.editor.document.getText().split("\n") }
-	getLength() { return this.editor.document.lineCount }
-	insertInLine(/** @type {{ row: number, column: number }} */position, /** @type {string} */text) {
-		this.editor.edit((builder) => { builder.insert(new vscode.Position(position.row, position.column), text) })
-			.then(undefined, (err) => { console.error(err) })
-	}
-	removeInLine(/** @type {number} */row, /** @type {number} */columnStart, /** @type {number} */columnEnd) {
-		this.editor.edit((builder) => { builder.delete(new vscode.Range(row, columnStart, row, columnEnd)) })
-			.then(undefined, (err) => { console.error(err) })
-	}
-	replace(/** @type {AceRange} */range, /** @type {string} */text) {
-		this.editor.edit((builder) => { builder.replace(new vscode.Range(range.startLine, range.startColumn, range.endLine, range.endColumn), text) })
-			.then(undefined, (err) => { console.error(err) })
-	}
-}
+const ExtensionNako3Compiler = require("./compiler")
+const { ReadonlyDocumentAdapter, DocumentAdapter } = require("./document_adapter")
 
 /**
  * semantic highlight に使うtypeとmodifierのリスト。
@@ -115,44 +59,6 @@ const getTokenAt = (/** @type {BackgroundTokenizer} */backgroundTokenizer, /** @
 }
 exports.getTokenAt = getTokenAt
 
-// 依存ファイルを取り込む。コメントを書いた部分以外はCNako3のコードと同じ
-// NOTE: ウェブから依存するファイルをダウンロードできるように変更する場合は、diagnosticsで使うとき、loadDependenciesを呼ばないか、手動で実行されたときに存在した依存ファイルだけをホワイトリストで許可するべき。
-const loadDependencies = (/** @type {NakoCompiler} */nako3, /** @type {string} */code, /** @type {string} */fileName, /** @type {string} */extensionPath, /** @type {boolean} */isUntitled) => {
-	const srcDir = path.join(extensionPath, "node_modules/nadesiko3/src")
-	const log = /** @type {Array<string>} */([])
-	return nako3.loadDependencies(code, fileName, "", {
-		resolvePath: (name, token) => {
-			if (/\.js(\.txt)?$/.test(name) || /^[^.]*$/.test(name)) {
-				return { filePath: path.resolve(CNako3.findPluginFile(name, fileName, srcDir, log)), type: 'js' }
-			}
-			if (/\.nako3?(\.txt)?$/.test(name)) {
-				if (path.isAbsolute(name)) {
-					return { filePath: path.resolve(name), type: 'nako3' }
-				} else {
-					if (isUntitled) {
-						throw new NakoImportError("相対パスによる取り込み文を使うには、ファイルを保存してください。", token.line, token.file) // 追加: Untitledなファイルではファイルパスを取得できない
-					}
-					return { filePath: path.join(path.dirname(token.file), name), type: 'nako3' }
-				}
-			}
-			return { filePath: name, type: 'invalid' }
-		},
-		readNako3: (name, token) => {
-			if (!fs.existsSync(name)) {
-				throw new NakoImportError(`ファイル ${name} が存在しません。`, token.line, token.file)
-			}
-			return { sync: true, value: fs.readFileSync(name).toString() }
-		},
-		readJs: (name, token) => {
-			try {
-				return { sync: true, value: () => require(name) }
-			} catch (/** @type {unknown} */err) {
-				throw new NakoImportError(`プラグイン ${name} の取り込みに失敗: ${err instanceof Error ? err.message : err + ''}\n検索したパス: ${log.join(', ')}`, token.line, token.file)
-			}
-		},
-	})
-}
-
 const sleep = (/** @type {number} */ms) => /** @type {Promise<void>} */new Promise((resolve) => setTimeout(resolve, ms))
 exports.sleep = sleep
 
@@ -185,6 +91,7 @@ const toSnakeCase = (/** @type {string} */s) => s.replace(/[A-Z]/g, (c) => '_' +
 	code: string | null
 	needValidation: boolean
 	dispose(): void
+	readonly nako3: ExtensionNako3Compiler
 } | null} */
 let state = null
 /** @type {vscode.WebviewPanel | null} */
@@ -194,8 +101,6 @@ let panel = null
 exports.activate = function activate(/** @type {vscode.ExtensionContext} */context) {
 	/** @type {vscode.DocumentSelector} */
 	const selector = { language: "nadesiko3", scheme: undefined }
-	const nako3 = new NakoCompiler()
-	nako3.addPluginObject('PluginNode', PluginNode)
 
 	const diagnosticCollection = vscode.languages.createDiagnosticCollection("nadesiko3")
 
@@ -218,6 +123,7 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 		// 別のエディタをフォーカスしたとき
 		if (state?.editor !== editor) {
 			const listeners = /** @type {Array<() => void>} */([])
+			const nako3 = new ExtensionNako3Compiler()
 			state = {
 				backgroundTokenizer: new BackgroundTokenizer(
 					new DocumentAdapter(editor),
@@ -236,7 +142,15 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 					this.listeners.forEach((f) => f())
 					this.listeners.length = 0
 					diagnosticCollection.delete(this.editor.document.uri)
-				}
+				},
+				nako3,
+			}
+			try {
+				const code = state.editor.document.getText()
+				const file = state.editor.document.fileName
+				state.nako3.__loadDependencies(code, file, context.extensionPath, state.editor.document.isUntitled)
+			} catch (e) {
+				console.log(e)
 			}
 		}
 
@@ -260,7 +174,7 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 				const code = state.editor.document.getText()
 				const file = state.editor.document.fileName
 				const diagnostics = /** @type {vscode.Diagnostic[]} */([])
-				const logger = nako3.replaceLogger()
+				const logger = state.nako3.replaceLogger()
 				logger.addListener('warn', ({ position, level, noColor }) => {
 					if (position.file === file && (level === 'warn' || level === 'error')) {
 						const range = new vscode.Range(...EditorMarkers.fromError(code, { ...position, message: noColor }, (row) => code.split('\n')[row] || ''))
@@ -268,11 +182,11 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 					}
 				})
 				try {
-					await loadDependencies(nako3, code, file, context.extensionPath, state.editor.document.isUntitled)
-					nako3.reset()
-					nako3.compile(code, file, false)
+					await state.nako3.__loadDependencies(code, file, context.extensionPath, state.editor.document.isUntitled)
+					state.nako3.reset()
+					state.nako3.compile(code, file, false)
 				} catch (err) {
-					nako3.logger.error(err)
+					state.nako3.logger.error(err)
 				}
 				diagnosticCollection.set(state.editor.document.uri, diagnostics)
 			}
@@ -328,7 +242,7 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 				if (state === null) {
 					return []
 				}
-				const prefix = LanguageFeatures.getCompletionPrefix(document.lineAt(position.line).text, nako3)
+				const prefix = LanguageFeatures.getCompletionPrefix(document.lineAt(position.line).text, state.nako3)
 				return [
 					...LanguageFeatures.getSnippets(document.getText()).map((item) => {
 						const snippet = new vscode.CompletionItem(item.caption, vscode.CompletionItemKind.Snippet)
@@ -336,7 +250,7 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 						snippet.insertText = new vscode.SnippetString(item.snippet)
 						return snippet
 					}),
-					...LanguageFeatures.getCompletionItems(position.line, prefix, nako3, state.backgroundTokenizer).map((item) => {
+					...LanguageFeatures.getCompletionItems(position.line, prefix, state.nako3, state.backgroundTokenizer).map((item) => {
 						const completion = new vscode.CompletionItem(item.caption, item.meta === '変数' ? vscode.CompletionItemKind.Variable : vscode.CompletionItemKind.Function)
 						completion.insertText = item.value
 						const doc = docs[toSnakeCase(item.meta)]?.[item.value]
@@ -355,9 +269,11 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 		// 動的にシンタックスハイライトするための関数を設定する。
 		vscode.languages.registerDocumentSemanticTokensProvider(selector, {
 			provideDocumentSemanticTokens: async (document) => {
+				console.debug(`provideDocumentSemanticTokens`)
 				const tokensBuilder = new vscode.SemanticTokensBuilder(legend)
-				if (document !== state?.editor.document) { return }
-				if (state.backgroundTokenizer.dirty) { await state.waitTokenUpdate() }
+				update()
+				if (document !== state?.editor.document) { console.debug(`document ${document.uri} is not active`); return }
+				if (state.backgroundTokenizer.dirty) { console.debug("waiting tokenization..."); await state.waitTokenUpdate(); console.debug("resolved") }
 				if (document !== state?.editor.document) { return } // await中に別のエディタに切り替わった場合
 				for (let line = 0; line < document.lineCount; line++) {
 					let character = 0
@@ -370,6 +286,7 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 						character += token.value.length
 					}
 				}
+				console.debug("return")
 				return tokensBuilder.build()
 			}
 		}, legend),
@@ -437,6 +354,7 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 			}
 
 			// プログラムを実行
+			const nako3 = new ExtensionNako3Compiler()
 			const logger = nako3.replaceLogger()
 			logger.addListener('warn', ({ html }) => {
 				panel?.webview.postMessage({ type: 'output', html })
@@ -445,7 +363,7 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 			const fileName = editor.document.fileName
 			try {
 				try {
-					await loadDependencies(nako3, code, fileName, context.extensionPath, editor.document.isUntitled)
+					await nako3.__loadDependencies(code, fileName, context.extensionPath, editor.document.isUntitled)
 				} catch (err) {
 					logger.error(err)
 					throw err

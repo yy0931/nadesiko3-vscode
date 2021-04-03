@@ -178,12 +178,13 @@ const toSnakeCase = (/** @type {string} */s) => s.replace(/[A-Z]/g, (c) => '_' +
 
 // 現在フォーカスされているエディタの状態を持つ変数
 /** @type {{
-	backgroundTokenizer: BackgroundTokenizer
-	editor: vscode.TextEditor
-	listeners: (() => void)[]
-	waitTokenUpdate: () => Promise<void>
+	readonly backgroundTokenizer: BackgroundTokenizer
+	readonly editor: vscode.TextEditor
+	readonly listeners: (() => void)[]
+	waitTokenUpdate(): Promise<void>
 	code: string | null
 	needValidation: boolean
+	dispose(): void
 } | null} */
 let state = null
 /** @type {vscode.WebviewPanel | null} */
@@ -205,10 +206,7 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 
 		// エディタが閉じられたとき
 		if (state !== null && state.editor !== editor) {
-			state.backgroundTokenizer.dispose()
-			state.listeners.forEach((f) => f())
-			state.listeners = []
-			diagnosticCollection.delete(state.editor.document.uri)
+			state.dispose()
 			state = null
 		}
 
@@ -219,13 +217,13 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 
 		// 別のエディタをフォーカスしたとき
 		if (state?.editor !== editor) {
-			let listeners = /** @type {Array<() => void>} */([])
+			const listeners = /** @type {Array<() => void>} */([])
 			state = {
 				backgroundTokenizer: new BackgroundTokenizer(
 					new DocumentAdapter(editor),
 					nako3,
-					(firstRow, lastRow, ms) => { listeners.forEach((f) => f()); listeners = [] },
-					(code, err) => { listeners.forEach((f) => f()); listeners = [] },
+					(firstRow, lastRow, ms) => { listeners.forEach((f) => f()); listeners.length = 0 },
+					(code, err) => { listeners.forEach((f) => f()); listeners.length = 0 },
 					true,
 				),
 				editor,
@@ -233,6 +231,12 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 				waitTokenUpdate: () => /** @type {Promise<void>} */(new Promise((resolve) => { listeners.push(() => { resolve() }) })),
 				code: null,
 				needValidation: true,
+				dispose() {
+					this.backgroundTokenizer.dispose()
+					this.listeners.forEach((f) => f())
+					this.listeners.length = 0
+					diagnosticCollection.delete(this.editor.document.uri)
+				}
 			}
 		}
 
@@ -480,6 +484,6 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 }
 
 exports.deactivate = function deactivate() {
-	state?.backgroundTokenizer.dispose()
+	state?.dispose()
 	panel?.dispose()
 }

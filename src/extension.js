@@ -149,7 +149,7 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 			try {
 				const code = state.editor.document.getText()
 				const file = state.editor.document.fileName
-				state.nako3.__loadDependencies(code, file, context.extensionPath, state.editor.document.isUntitled)
+				state.nako3.loadDependencies(code, file, context.extensionPath, state.editor.document.isUntitled)
 			} catch (e) {
 				console.log(e)
 			}
@@ -183,7 +183,7 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 					}
 				})
 				try {
-					await state.nako3.__loadDependencies(code, file, context.extensionPath, state.editor.document.isUntitled)
+					await state.nako3.loadDependencies(code, file, context.extensionPath, state.editor.document.isUntitled)
 					state.nako3.reset()
 					state.nako3.compile(code, file, false)
 				} catch (err) {
@@ -286,7 +286,6 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 					}
 				} else {
 					const prefix = LanguageFeatures.getCompletionPrefix(left, state.nako3)
-					console.log(`B: ${prefix}`)
 					return [
 						...LanguageFeatures.getSnippets(document.getText()).map((item) => {
 							const snippet = new vscode.CompletionItem(item.caption, vscode.CompletionItemKind.Snippet)
@@ -406,7 +405,7 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 			const fileName = editor.document.fileName
 			try {
 				try {
-					await nako3.__loadDependencies(code, fileName, context.extensionPath, editor.document.isUntitled)
+					await nako3.loadDependencies(code, fileName, context.extensionPath, editor.document.isUntitled)
 				} catch (err) {
 					logger.error(err)
 					throw err

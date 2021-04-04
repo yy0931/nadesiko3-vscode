@@ -10,7 +10,7 @@ const main = async () => {
 	const minVersion = semver.minVersion(packageJSON.engines.vscode)?.format()
 
 	// 各バージョンでテストする
-	for (const version of ['stable', 'insiders', minVersion]) {
+	for (const version of ['stable', minVersion]) {
 		await runTests({
 			extensionDevelopmentPath: path.resolve(__dirname, '../'),
 			extensionTestsPath: path.resolve(__dirname, './suite/index'),
@@ -21,7 +21,7 @@ const main = async () => {
 }
 
 main().catch((err) => {
-	console.error('Failed to run tests')
+	console.error(err)
 	process.exit(1)
 })
 // `extensionDevelopmentPath` 下の拡張機能とともにVSCodeを起動し、その中で `extensionTestsPath` のrun関数を実行する。

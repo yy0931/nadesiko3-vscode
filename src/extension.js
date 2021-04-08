@@ -81,6 +81,16 @@ const retry = async (f) => {
 }
 exports.retry = retry
 
+
+const safeReaddirSync = (/** @type {string} */filepath) => {
+	try {
+		return fs.readdirSync(filepath)
+	} catch (e) {
+		console.log(e)
+		return []
+	}
+}
+
 const toSnakeCase = (/** @type {string} */s) => s.replace(/[A-Z]/g, (c) => '_' + c.toLowerCase()).replace(/^_+/, "")
 
 // 現在フォーカスされているエディタの状態を持つ変数
@@ -198,6 +208,10 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 		context.subscriptions.push({ dispose() { canceled = true } })
 	}
 
+	/** @type {readonly string[]} */
+	const builtinPluginNames = safeReaddirSync(ExtensionNako3Compiler.getPluginDirectory(context.extensionPath))
+		.filter((f) => f.startsWith("plugin_") && f.endsWith(".js"))
+
 	// subscriptionsに { dispose(): any } を実装するオブジェクトをpushしておくと、拡張機能の deactivate() 時に自動的に dispose() を呼んでくれる。
 	context.subscriptions.push(
 		diagnosticCollection,
@@ -249,20 +263,13 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 				if (state === null) {
 					return []
 				}
-				const safeReaddirSync = (/** @type {string} */filepath) => {
-					try {
-						return fs.readdirSync(filepath)
-					} catch (e) {
-						console.log(e)
-						return []
-					}
-				}
 
 				const left = document.lineAt(position.line).text.slice(0, position.character)
 				// 行が"！「"で始まってカーソルより左に"」"が無いなら、ファイル名を補完する。
 				const indent = getIndent(left)
 				if ((left.slice(indent.length).startsWith("!「") || left.slice(indent.length).startsWith("！「")) && !left.includes("」")) {
 					const prefix = left.slice(indent.length + 2)
+					// ./ か ../ で始まるならローカルのファイル名を補完する。そうでなければ組み込みのプラグイン名を補完する。
 					if ((/^\.\.?(\/|\\)/.test(prefix)) && !state.editor.document.isUntitled) {
 						const items = /** @type {vscode.CompletionItem[]} */([])
 
@@ -286,17 +293,16 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 						}
 						return items
 					} else {
-						return safeReaddirSync(ExtensionNako3Compiler.getPluginDirectory(context.extensionPath))
-							.filter((f) => f.startsWith("plugin_") && f.endsWith(".js"))
-							.map((v) => {
-								const item = new vscode.CompletionItem(v.replace(/\.js$/, ''), vscode.CompletionItemKind.Module)
-								item.range = new vscode.Range(position.line, position.character - prefix.length, position.line, position.character)
-								return item
-							})
+						return builtinPluginNames.map((v) => {
+							const item = new vscode.CompletionItem(v.replace(/\.js$/, ''), vscode.CompletionItemKind.Module)
+							item.range = new vscode.Range(position.line, position.character - prefix.length, position.line, position.character)
+							return item
+						})
 					}
 				} else {
 					const prefix = LanguageFeatures.getCompletionPrefix(left, state.nako3)
 					return [
+						// スニペット
 						...LanguageFeatures.getSnippets(document.getText()).map((item) => {
 							const snippet = new vscode.CompletionItem(item.caption, vscode.CompletionItemKind.Snippet)
 							snippet.detail = item.meta
@@ -304,6 +310,7 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 							snippet.range = new vscode.Range(position.line, position.character - prefix.length, position.line, position.character)
 							return snippet
 						}),
+						// 変数名、関数名
 						...LanguageFeatures.getCompletionItems(position.line, prefix, state.nako3, state.backgroundTokenizer).map((item) => {
 							const completion = new vscode.CompletionItem(item.caption, item.meta === '変数' ? vscode.CompletionItemKind.Variable : vscode.CompletionItemKind.Function)
 							completion.insertText = item.value

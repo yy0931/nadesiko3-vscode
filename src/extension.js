@@ -288,7 +288,11 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 					} else {
 						return safeReaddirSync(ExtensionNako3Compiler.getPluginDirectory(context.extensionPath))
 							.filter((f) => f.startsWith("plugin_") && f.endsWith(".js"))
-							.map((v) => new vscode.CompletionItem(v.replace(/\.js$/, ''), vscode.CompletionItemKind.Module))
+							.map((v) => {
+								const item = new vscode.CompletionItem(v.replace(/\.js$/, ''), vscode.CompletionItemKind.Module)
+								item.range = new vscode.Range(position.line, position.character - prefix.length, position.line, position.character)
+								return item
+							})
 					}
 				} else {
 					const prefix = LanguageFeatures.getCompletionPrefix(left, state.nako3)

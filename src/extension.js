@@ -221,13 +221,7 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 		vscode.window.onDidChangeTextEditorOptions(() => { update() }),
 		vscode.workspace.onDidOpenTextDocument(() => { update() }),
 		vscode.workspace.onDidChangeConfiguration(() => { update() }),
-		vscode.workspace.onDidChangeTextDocument((e) => {
-			update()
-			// 文字を削除する時、rangeに削除範囲、textに空文字列が入っている。
-			if (e.contentChanges.some((v) => v.text !== '' && !v.text.includes('\n') && !/[０-９ａ-ｚＡ-Ｚ]$/.test(v.text))) {
-				vscode.commands.executeCommand("editor.action.triggerSuggest")
-			}
-		}),
+		vscode.workspace.onDidChangeTextDocument((e) => { update() }),
 
 		// エディタ（上のファイル）が閉じられたとき
 		vscode.workspace.onDidCloseTextDocument((doc) => { diagnosticCollection.delete(doc.uri) }),
@@ -307,7 +301,6 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 							const snippet = new vscode.CompletionItem(item.caption, vscode.CompletionItemKind.Snippet)
 							snippet.detail = item.meta
 							snippet.insertText = new vscode.SnippetString(item.snippet)
-							snippet.range = new vscode.Range(position.line, position.character - prefix.length, position.line, position.character)
 							return snippet
 						}),
 						// 変数名、関数名

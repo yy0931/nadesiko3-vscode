@@ -22,8 +22,7 @@
 	"contributes": {
 		"configurationDefaults": {
 			"[nadesiko3]": {
-				"editor.wordSeparators": "`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?｀～！＠＃＄％＾＆＊（）－＝＋［｛］｝＼｜；：＇＂，．＜＞／？「」『』“”",
-				"editor.quickSuggestions": false
+				"editor.wordSeparators": "`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?｀～！＠＃＄％＾＆＊（）－＝＋［｛］｝＼｜；：＇＂，．＜＞／？「」『』“”"
 			}
 		},
 		"semanticTokenScopes": [

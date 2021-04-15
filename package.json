@@ -2,7 +2,7 @@
 	"name": "nadesiko3-vscode",
 	"displayName": "日本語プログラミング言語 なでしこv3",
 	"description": "",
-	"version": "1.17.0",
+	"version": "1.18.0",
 	"license": "MIT",
 	"publisher": "yy0931",
 	"repository": {
@@ -76,8 +76,7 @@
 	},
 	"scripts": {
 		"prepare": "cd node_modules/nadesiko3 && yarn build:command && cd ../.. && node gen_docs.js",
-		"test": "npx eslint src/**/*.js && node ./test/runTest.js",
-		"vscode:prepublish": "npm test && npm run prepare"
+		"test": "npx eslint src/**/*.js && node ./test/runTest.js"
 	},
 	"devDependencies": {
 		"@types/chai": "*",

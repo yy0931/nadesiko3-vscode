@@ -223,7 +223,7 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 		vscode.workspace.onDidChangeConfiguration(() => { update() }),
 		vscode.workspace.onDidChangeTextDocument((e) => {
 			update()
-			// 文字を削除する時、rangeに削除範囲、textに空白文字が入っている。
+			// 文字を削除する時、rangeに削除範囲、textに空文字列が入っている。
 			if (e.contentChanges.some((v) => v.text !== '' && !v.text.includes('\n') && !/[０-９ａ-ｚＡ-Ｚ]$/.test(v.text))) {
 				vscode.commands.executeCommand("editor.action.triggerSuggest")
 			}

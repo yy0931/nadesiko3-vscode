@@ -64,7 +64,7 @@ describe('一時的なファイル', () => {
             const diagnostics = vscode.languages.getDiagnostics(document.uri)
             expect(diagnostics).has.lengthOf(1)
             expect(diagnostics[0].severity).to.equal(vscode.DiagnosticSeverity.Warning)
-            expect(diagnostics[0].message).to.include('変数 A は定義されていません')
+            expect(diagnostics[0].message).to.include('変数『A』は定義されていません')
         })
         await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
     })

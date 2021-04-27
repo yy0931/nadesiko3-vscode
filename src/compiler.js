@@ -23,7 +23,7 @@ module.exports = class ExtensionNako3Compiler extends NakoCompiler {
         return this._loadDependencies(code, fileName, "", {
             resolvePath: (name, token) => {
                 if (/\.js(\.txt)?$/.test(name) || /^[^.]*$/.test(name)) {
-                    return { filePath: path.resolve(CNako3.findPluginFile(name, fileName, pluginDir, log)), type: 'js' }
+                    return { filePath: path.resolve(CNako3.findPluginFile(name, fileName, pluginDir, log)), type: 'js' } // 変更: __dirnameをpluginDirで置換
                 }
                 if (/\.nako3?(\.txt)?$/.test(name)) {
                     if (path.isAbsolute(name)) {
@@ -44,10 +44,19 @@ module.exports = class ExtensionNako3Compiler extends NakoCompiler {
                 return { sync: true, value: fs.readFileSync(name).toString() }
             },
             readJs: (name, token) => {
-                try {
-                    return { sync: true, value: () => require(name) }
-                } catch (/** @type {unknown} */err) {
-                    throw new NakoImportError(`プラグイン ${name} の取り込みに失敗: ${err instanceof Error ? err.message : err + ''}\n検索したパス: ${log.join(', ')}`, token.line, token.file)
+                return {
+                    sync: true,
+                    value: () => {
+                        try {
+                            return require(name)
+                        } catch (/** @type {unknown} */err) {
+                            let msg = `プラグイン ${name} の取り込みに失敗: ${err instanceof Error ? err.message : err + ''}`
+                            if (err instanceof Error && err.message.startsWith('Cannot find module')) {
+                                msg += `\n次の場所を検索しました: ${log.join(', ')}`
+                            }
+                            throw new NakoImportError(msg, token.line, token.file)
+                        }
+                    }
                 }
             },
         })

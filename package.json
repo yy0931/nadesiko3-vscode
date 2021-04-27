@@ -74,11 +74,12 @@
 		]
 	},
 	"scripts": {
-		"prepare": "cd node_modules/nadesiko3 && yarn build:command && cd ../.. && node gen_docs.js",
+		"prepare": "cd node_modules/nadesiko3 && yarn build:command && cd ../.. && node prepare.js",
 		"test": "npx eslint src/**/*.js && node ./test/runTest.js"
 	},
 	"devDependencies": {
 		"@types/chai": "*",
+		"@types/fs-extra": "^9.0.11",
 		"@types/glob": "*",
 		"@types/mocha": "*",
 		"@types/node": "*",
@@ -97,6 +98,7 @@
 		"vscode-test": "*"
 	},
 	"dependencies": {
+		"fs-extra": "^9.1.0",
 		"nadesiko3": "git+https://github.com/kujirahand/nadesiko3",
 		"node-html-parser": "*"
 	}

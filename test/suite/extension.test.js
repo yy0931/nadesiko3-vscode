@@ -1,8 +1,10 @@
 const vscode = require('vscode')
 const { expect } = require('chai')
 const { legend, retry } = require('../../src/extension')
-const path = require('path')
 const docs = require('../../src/docs')
+const ExtensionNako3Compiler = require('../../src/compiler')
+const path = require('path')
+const extensionPath = path.join(__dirname, '../../')
 
 /** @type {<T>(x: T | null | undefined) => T} */
 const notNullish = (x) => x
@@ -75,6 +77,13 @@ describe('一時的なファイル', () => {
         expect(out.html.trim()).to.equal(`<div style="">3</div><div style="">10</div>`)
         await vscode.commands.executeCommand('workbench.action.closeActiveEditor') // webview
         await vscode.commands.executeCommand('workbench.action.closeActiveEditor') // editor
+    })
+    it('plugin_browserの取り込み', async () => {
+        const nako3 = new ExtensionNako3Compiler()
+        const code = '！「plugin_browser」を取り込む'
+        nako3.loadDependencies(code, "main.nako3", extensionPath, true)
+        nako3.reset()
+        nako3.compile(code, "main.nako3", false)
     })
     it('ドキュメントの表示', () => {
         expect(docs['plugin_csv']['CSV取得']).to.not.null

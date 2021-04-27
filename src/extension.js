@@ -414,6 +414,9 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 			})
 			const code = editor.document.getText()
 			const fileName = editor.document.fileName
+			if (/^[！!][「『]plugin_browser[」』]を取り込む/.test(code)) {
+				logger.warn("plugin_browserを取り込んでいますが、この拡張機能はブラウザでの実行には対応していません。")
+			}
 			try {
 				try {
 					await nako3.loadDependencies(code, fileName, context.extensionPath, editor.document.isUntitled)

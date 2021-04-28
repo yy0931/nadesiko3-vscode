@@ -1,9 +1,9 @@
 const vscode = require('vscode')
 const { expect } = require('chai')
 const { legend, retry } = require('../../src/extension')
-const docs = require('../../src/docs')
 const ExtensionNako3Compiler = require('../../src/compiler')
 const path = require('path')
+const prepare = require('../../src/prepare')
 const extensionPath = path.join(__dirname, '../../')
 
 /** @type {<T>(x: T | null | undefined) => T} */
@@ -86,6 +86,7 @@ describe('一時的なファイル', () => {
         nako3.compile(code, "main.nako3", false)
     })
     it('ドキュメントの表示', () => {
+        const docs = prepare()
         expect(docs['plugin_csv']['CSV取得']).to.not.null
     })
 })

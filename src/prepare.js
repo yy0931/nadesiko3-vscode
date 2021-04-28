@@ -1,4 +1,3 @@
-//@ts-check
 const fs = require('fs-extra')
 const path = require('path')
 const glob = require('glob')
@@ -9,8 +8,7 @@ const glob = require('glob')
 const generateDocuments = () => {
     const dataDir = path.join(__dirname, '../node_modules/nadesiko3doc/data')
 
-    /** @type {Record<string, Record<string, string>>} */
-    const result = {}
+    const result = /** @type {Record<string, Record<string, string>>} */({})
 
     for (const filePath of glob.sync(path.join(dataDir, 'plugin_*/*.txt'))) {
         const relative = path.relative(dataDir, filePath)
@@ -45,8 +43,7 @@ const generateDocuments = () => {
     }
 
     fs.writeFileSync("src/docs.js", `\
-/** @type {Record<string, Record<string, string>>} */
-module.exports = ` + JSON.stringify(result))
+module.exports = /** @type {Record<string, Record<string, string>>} */(${JSON.stringify(result)})`)
 }
 
 /**

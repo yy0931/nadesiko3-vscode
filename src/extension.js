@@ -4,7 +4,8 @@ const { getIndent } = require("nadesiko3/src/nako_indent")
 const path = require('path')
 const fs = require('fs')
 const nodeHTMLParser = require("node-html-parser")
-const docs = require('./docs')
+//@ts-ignore
+const docs = /** @type {Record<string, Record<string, string>>} */(require('./docs')) // eslint-disable-line
 const ExtensionNako3Compiler = require("./compiler")
 const { ReadonlyDocumentAdapter, DocumentAdapter } = require("./document_adapter")
 const prepare = require("./prepare")

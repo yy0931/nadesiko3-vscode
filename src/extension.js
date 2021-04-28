@@ -7,6 +7,7 @@ const nodeHTMLParser = require("node-html-parser")
 const docs = require('./docs')
 const ExtensionNako3Compiler = require("./compiler")
 const { ReadonlyDocumentAdapter, DocumentAdapter } = require("./document_adapter")
+const prepare = require("./prepare")
 
 /**
  * semantic highlight に使うtypeとmodifierのリスト。
@@ -110,6 +111,7 @@ let panel = null
 
 // 拡張機能が有効化されるとこの関数が呼ばれる。有効化されるタイミングは package.json のactivationEventsで定義される。
 exports.activate = function activate(/** @type {vscode.ExtensionContext} */context) {
+	prepare()
 	/** @type {vscode.DocumentSelector} */
 	const selector = { language: "nadesiko3", scheme: undefined }
 

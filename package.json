@@ -74,7 +74,6 @@
 		]
 	},
 	"scripts": {
-		"prepare": "cd node_modules/nadesiko3 && yarn build:command && cd ../.. && node prepare.js",
 		"test": "npx eslint src/**/*.js && node ./test/runTest.js"
 	},
 	"devDependencies": {
@@ -89,7 +88,6 @@
 		"@typescript-eslint/parser": "*",
 		"chai": "*",
 		"eslint": "*",
-		"glob": "*",
 		"mocha": "*",
 		"nadesiko3doc": "git+https://github.com/kujirahand/nadesiko3doc",
 		"semver": "*",
@@ -98,6 +96,7 @@
 		"vscode-test": "*"
 	},
 	"dependencies": {
+		"glob": "*",
 		"fs-extra": "^9.1.0",
 		"nadesiko3": "git+https://github.com/kujirahand/nadesiko3",
 		"node-html-parser": "*"

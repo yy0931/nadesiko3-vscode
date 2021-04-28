@@ -7,7 +7,7 @@ const glob = require('glob')
  * ホバーで表示するドキュメントを生成する。
  */
 const generateDocuments = () => {
-    const dataDir = 'node_modules/nadesiko3doc/data'
+    const dataDir = path.join(__dirname, '../node_modules/nadesiko3doc/data')
 
     /** @type {Record<string, Record<string, string>>} */
     const result = {}
@@ -53,11 +53,13 @@ module.exports = ` + JSON.stringify(result))
  * plugin_browserを取り込んでもエラーが飛ばないように、moduleを追加する。
  */
 const copyStubModules = () => {
-    const dirname = path.join(__dirname, "stub_modules")
+    const dirname = path.join(__dirname, "../stub_modules")
     for (const basename of fs.readdirSync(dirname)) {
-        fs.copySync(path.join(dirname, basename), path.join(__dirname, "node_modules", basename))
+        fs.copySync(path.join(dirname, basename), path.join(__dirname, "../node_modules", basename))
     }
 }
 
-generateDocuments()
-copyStubModules()
+module.exports = () => {
+    generateDocuments()
+    copyStubModules()
+}

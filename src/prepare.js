@@ -42,8 +42,7 @@ const generateDocuments = () => {
         result[pluginName][name] = textMarkdown
     }
 
-    fs.writeFileSync("src/docs.js", `\
-module.exports = /** @type {Record<string, Record<string, string>>} */(${JSON.stringify(result)})`)
+    return result
 }
 
 /**
@@ -57,6 +56,6 @@ const copyStubModules = () => {
 }
 
 module.exports = () => {
-    generateDocuments()
     copyStubModules()
+    return generateDocuments()
 }

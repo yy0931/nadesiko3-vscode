@@ -4,8 +4,6 @@ const { getIndent } = require("nadesiko3/src/nako_indent")
 const path = require('path')
 const fs = require('fs')
 const nodeHTMLParser = require("node-html-parser")
-//@ts-ignore
-const docs = /** @type {Record<string, Record<string, string>>} */(require('./docs')) // eslint-disable-line
 const ExtensionNako3Compiler = require("./compiler")
 const { ReadonlyDocumentAdapter, DocumentAdapter } = require("./document_adapter")
 const prepare = require("./prepare")
@@ -112,7 +110,8 @@ let panel = null
 
 // 拡張機能が有効化されるとこの関数が呼ばれる。有効化されるタイミングは package.json のactivationEventsで定義される。
 exports.activate = function activate(/** @type {vscode.ExtensionContext} */context) {
-	prepare()
+	const docs = prepare()
+
 	/** @type {vscode.DocumentSelector} */
 	const selector = { language: "nadesiko3", scheme: undefined }
 

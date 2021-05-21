@@ -378,6 +378,47 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 			await vscode.commands.executeCommand("nadesiko3.runActiveFile", true)
 		}),
 
+		// なでしこ言語のコンパイラのバージョンの変更
+		vscode.commands.registerCommand("nadesiko3.selectCompiler", async () => {
+			try {
+				const fetch = require("node-fetch").default
+
+				const res = await vscode.window.showWarningMessage("注意: この拡張機能はすべてのコンパイラのバージョンには対応していません。インストールするコンパイラのバージョンによってはなでしこ言語のVSCode拡張機能が起動しなくなる可能性があります。もし動作しなくなったら、なでしこ言語のVSCode拡張機能を再インストールしてください。", { modal: true }, "確認")
+				if (res !== "確認") {
+					return
+				}
+
+				// コンパイラのバージョンのリストを取得する
+				/** @type {{ name: string, zipball_url: string, tarball_url: string, commit: { sha: string, url: string }, node_id: string }[]} */
+				const tags = await fetch(`https://api.github.com/repos/kujirahand/nadesiko3/tags`).then((res) => res.json())
+
+				// バージョン番号の選択
+				const picked = await vscode.window.showQuickPick(tags.map((tag) => /** @type {vscode.QuickPickItem} */({ label: tag.name, description: `commit:${tag.commit.sha.slice(0, 6)}` })), { canPickMany: false, placeHolder: "インストールするバージョンを選択...", matchOnDescription: true })
+				if (picked === undefined) {
+					return
+				}
+				const tag = picked.label
+
+				await vscode.window.withProgress({ title: "コンパイラをダウンロードしています...", location: vscode.ProgressLocation.Notification, cancellable: true }, async (progress, token) => {
+					// GitHubからコンパイラのソースコードをダウンロードする
+					const ac = new (require("abort-controller").default)()
+					token.onCancellationRequested(() => { ac.abort() })
+					const buf = await fetch(`https://github.com/kujirahand/nadesiko3/archive/${tag}.zip`, { signal: ac.signal }).then((res) => res.buffer())
+
+					// Zipファイルとして解凍して node_modules/nadesiko3 に配置
+					new (require("adm-zip"))(buf).extractEntryTo(`nadesiko3-${tag}/`, context.extensionPath)
+					const dst = path.join(context.extensionPath, "node_modules/nadesiko3")
+					fs.rmSync(dst, { recursive: true })
+					fs.renameSync(path.join(context.extensionPath, `nadesiko3-${tag}`), dst)
+				})
+
+				vscode.window.showInformationMessage(`バージョン ${tag} に更新しました。変更を反映するにはVSCodeを再起動する必要があります。`)
+			} catch (err) {
+				vscode.window.showErrorMessage(`なでしこ言語の更新に失敗: ${err}`)
+				console.error(err)
+			}
+		}),
+
 		// [ファイルを実行] ボタンを押したときの動作を設定する。
 		vscode.commands.registerCommand("nadesiko3.runActiveFile", async (/** @type {string | boolean | vscode.ExtensionContext} */test = false, /** @type {boolean} */vscodeTest = false) => {
 			// menusのボタンから実行すると第一引数にExtensionContextが渡される。

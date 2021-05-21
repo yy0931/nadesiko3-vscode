@@ -83,7 +83,7 @@
 		]
 	},
 	"scripts": {
-		"test": "npx eslint src/**/*.js && node ./test/runTest.js"
+		"test": "node ./test/runTest.js"
 	},
 	"devDependencies": {
 		"@types/chai": "*",
@@ -94,10 +94,7 @@
 		"@types/node-fetch": "^2.5.10",
 		"@types/semver": "*",
 		"@types/vscode": "^1.53.0",
-		"@typescript-eslint/eslint-plugin": "*",
-		"@typescript-eslint/parser": "*",
 		"chai": "*",
-		"eslint": "*",
 		"mocha": "*",
 		"nadesiko3doc": "git+https://github.com/kujirahand/nadesiko3doc",
 		"semver": "*",

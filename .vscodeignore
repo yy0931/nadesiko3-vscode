@@ -4,7 +4,6 @@ test/**
 .gitignore
 .yarnrc
 **/jsconfig.json
-**/.eslintrc.js
 .github/**
 .cache/**
 example/**

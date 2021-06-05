@@ -383,7 +383,7 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 			try {
 				const fetch = require("node-fetch").default
 
-				const res = await vscode.window.showWarningMessage("注意: この拡張機能はすべてのコンパイラのバージョンには対応していません。インストールするコンパイラのバージョンによってはなでしこ言語のVSCode拡張機能が起動しなくなる可能性があります。もし動作しなくなったら、なでしこ言語のVSCode拡張機能を再インストールしてください。", { modal: true }, "確認")
+				const res = await vscode.window.showWarningMessage("注意:\n1. この拡張機能はすべてのコンパイラのバージョンには対応していません。インストールするコンパイラのバージョンによってはなでしこ言語のVSCode拡張機能が起動しなくなる可能性があります。その場合、拡張機能を再インストールすることで初期化できます。\n2. コンパイラのバージョンは拡張機能のバージョンを更新するとリセットされます。この問題は将来修正される可能性があります。", { modal: true }, "確認")
 				if (res !== "確認") {
 					return
 				}
@@ -412,7 +412,7 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 					fs.renameSync(path.join(context.extensionPath, `nadesiko3-${tag}`), dst)
 				})
 
-				vscode.window.showInformationMessage(`バージョン ${tag} に更新しました。変更を反映するにはVSCodeを再起動する必要があります。`)
+				vscode.window.showInformationMessage(`${tag} に更新しました。VSCodeを再起動してください。`) // NOTE: メッセージが短くないと後ろのほうが隠れてしまう
 			} catch (err) {
 				vscode.window.showErrorMessage(`なでしこ言語の更新に失敗: ${err}`)
 				console.error(err)

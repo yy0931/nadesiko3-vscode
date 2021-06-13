@@ -113,7 +113,7 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 	const docs = prepare()
 
 	/** @type {vscode.DocumentSelector} */
-	const selector = { language: "nadesiko3", scheme: undefined }
+	const selector = { language: "nadesiko3" }
 
 	const diagnosticCollection = vscode.languages.createDiagnosticCollection("nadesiko3")
 
@@ -199,7 +199,7 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 					state.nako3.reset()
 					state.nako3.compile(code, file, false)
 				} catch (err) {
-					state.nako3.logger.error(err)
+					state.nako3.logger.error(/** @type {Error} */(err))
 				}
 				diagnosticCollection.set(state.editor.document.uri, diagnostics)
 			}
@@ -464,7 +464,7 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 				try {
 					await nako3.loadDependencies(code, fileName, context.extensionPath, editor.document.isUntitled)
 				} catch (err) {
-					logger.error(err)
+					logger.error(/** @type {Error} */(err))
 					throw err
 				}
 				let nakoGlobal

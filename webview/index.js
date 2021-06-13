@@ -1,10 +1,9 @@
 /** @type {<T>(x: T | null | undefined) => T} */
-const notNullish = (x) => x
+const notNullish = (x) => /** @type {any} */(x)
 
 const output = notNullish(document.querySelector('#output'))
 const clear = notNullish(document.querySelector('#clear'))
 
-//@ts-ignore
 const vscode = acquireVsCodeApi()
 
 clear.addEventListener('click', () => {

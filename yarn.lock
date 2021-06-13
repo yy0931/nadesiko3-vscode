@@ -55,6 +55,11 @@
   resolved "https://registry.yarnpkg.com/@types/semver/-/semver-7.3.6.tgz#e9831776f4512a7ba6da53e71c26e5fb67882d63"
   integrity sha512-0caWDWmpCp0uifxFh+FaqK3CuZ2SkRR/ZRxAV5+zNdC3QVUi6wyOJnefhPvtNt8NQWXB5OA93BUvZsXpWat2Xw==
 
+"@types/vscode-webview@^1.57.0":
+  version "1.57.0"
+  resolved "https://registry.yarnpkg.com/@types/vscode-webview/-/vscode-webview-1.57.0.tgz#bad5194d45ae8d03afc1c0f67f71ff5e7a243bbf"
+  integrity sha512-x3Cb/SMa1IwRHfSvKaZDZOTh4cNoG505c3NjTqGlMC082m++x/ETUmtYniDsw6SSmYzZXO8KBNhYxR0+VqymqA==
+
 "@types/vscode@^1.53.0":
   version "1.56.0"
   resolved "https://registry.yarnpkg.com/@types/vscode/-/vscode-1.56.0.tgz#2a75ee6d66e529295648b0b6ee43824564ed9c1a"

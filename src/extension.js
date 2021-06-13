@@ -365,7 +365,7 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 					lens.push(new vscode.CodeLens(
 						new vscode.Range(0, 0, 0, 0),
 						{
-							title: "$(play) ファイルを実行",
+							title: `$(play) ファイルを実行 (v${ExtensionNako3Compiler.version.version})`,
 							command: "nadesiko3.runActiveFile",
 						},
 					))

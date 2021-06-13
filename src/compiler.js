@@ -6,6 +6,8 @@ const path = require("path")
 const fs = require("fs")
 
 module.exports = class ExtensionNako3Compiler extends NakoCompiler {
+    static version = require("nadesiko3/src/nako_version")
+
     constructor() {
         super()
         this.addPluginObject('PluginNode', PluginNode)

@@ -412,7 +412,7 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 					fs.renameSync(path.join(context.extensionPath, `nadesiko3-${tag}`), dst)
 				})
 
-				vscode.window.showInformationMessage(`${tag} に更新しました。VSCodeを再起動してください。`) // NOTE: メッセージが短くないと後ろのほうが隠れてしまう
+				vscode.window.showInformationMessage(`${tag} に更新しました。VSCodeを再起動してください。すべてのウィンドウを閉じて、少し待ってから開いてください。`) // NOTE: メッセージが短くないと後ろのほうが隠れてしまう
 			} catch (err) {
 				vscode.window.showErrorMessage(`なでしこ言語の更新に失敗: ${err}`)
 				console.error(err)

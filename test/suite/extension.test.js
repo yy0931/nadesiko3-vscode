@@ -7,7 +7,7 @@ const prepare = require('../../src/prepare')
 const extensionPath = path.join(__dirname, '../../')
 
 /** @type {<T>(x: T | null | undefined) => T} */
-const notNullish = (x) => x
+const notNullish = (x) => /** @type {any} */(x)
 
 const openUntitledFile = async (/** @type {string} */content) => {
     const document = await vscode.workspace.openTextDocument({ language: 'nadesiko3', content })
@@ -27,10 +27,8 @@ describe('一時的なファイル', () => {
             /** @type {vscode.CodeLens[]} */
             const lens = notNullish(await vscode.commands.executeCommand('vscode.executeCodeLensProvider', document.uri))
             expect(lens).to.be.an('array').and.have.lengthOf(1)
-            expect(notNullish(lens)[0].command).to.deep.include({
-                title: '$(play) ファイルを実行',
-                command: 'nadesiko3.runActiveFile',
-            })
+            expect(lens[0].command?.title).to.include('$(play) ファイルを実行')
+            expect(lens[0].command?.command).to.equal('nadesiko3.runActiveFile')
         })
         await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
     })

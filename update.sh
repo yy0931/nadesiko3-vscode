@@ -2,6 +2,7 @@
 set -Eeuo pipefail
 
 yarn upgrade
+yarn
 yarn test
 
 git add .

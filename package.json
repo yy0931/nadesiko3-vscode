@@ -93,7 +93,7 @@
 		"@types/node": "*",
 		"@types/node-fetch": "^2.5.10",
 		"@types/semver": "*",
-		"@types/vscode": "^1.53.0",
+		"@types/vscode": "^1.57.0",
 		"@types/vscode-webview": "^1.57.0",
 		"chai": "*",
 		"mocha": "*",
@@ -108,7 +108,7 @@
 		"adm-zip": "^0.5.5",
 		"fs-extra": "^9.1.0",
 		"glob": "*",
-		"nadesiko3": "git+https://github.com/kujirahand/nadesiko3",
+		"nadesiko3": "git+https://github.com/kujirahand/nadesiko3.git",
 		"node-fetch": "^2.6.1",
 		"node-html-parser": "*"
 	}

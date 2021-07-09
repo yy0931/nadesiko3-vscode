@@ -7,5 +7,6 @@ test/**
 .github/**
 .cache/**
 example/**
+update.sh
 
 # node_modulesを除外するとなでしこのプラグインを実行時に取得できなくなる。

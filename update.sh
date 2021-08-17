@@ -3,7 +3,7 @@ set -Eeuo pipefail
 
 yarn upgrade
 yarn
-yarn test
+# yarn test
 
 git add .
 git commit -m "依存関係の更新"

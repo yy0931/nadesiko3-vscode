@@ -9,7 +9,7 @@ module.exports = class ExtensionNako3Compiler extends NakoCompiler {
     static version = require("nadesiko3/src/nako_version")
 
     constructor() {
-        super()
+        super(undefined)
         this.addPluginObject('PluginNode', PluginNode)
     }
 

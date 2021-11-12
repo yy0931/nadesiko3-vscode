@@ -6,7 +6,7 @@ yarn
 # yarn test
 
 git add .
-git commit -m "依存関係の更新"
+git commit -m "Update dependencies"
 
 npm version patch
 git push origin --tags

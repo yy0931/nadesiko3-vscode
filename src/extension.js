@@ -390,7 +390,7 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 
 				// コンパイラのバージョンのリストを取得する
 				/** @type {{ name: string, zipball_url: string, tarball_url: string, commit: { sha: string, url: string }, node_id: string }[]} */
-				const tags = await fetch(`https://api.github.com/repos/kujirahand/nadesiko3/tags`).then((res) => res.json())
+				const tags = await fetch(`https://api.github.com/repos/kujirahand/nadesiko3/tags`).then((res) => /** @type {any} */(res.json()))
 
 				// バージョン番号の選択
 				const picked = await vscode.window.showQuickPick(tags.map((tag) => /** @type {vscode.QuickPickItem} */({ label: tag.name, description: `commit:${tag.commit.sha.slice(0, 6)}` })), { canPickMany: false, placeHolder: "インストールするバージョンを選択...", matchOnDescription: true })

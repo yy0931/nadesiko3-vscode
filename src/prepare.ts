@@ -8,7 +8,7 @@ import path from 'path'
 const generateDocuments = () => {
     const dataDir = path.join(__dirname, '../node_modules/nadesiko3doc/data')
 
-    const result = /** @type {Record<string, Record<string, string>>} */({})
+    const result: Record<string, Record<string, string>> = {}
 
     for (const filePath of glob.sync(path.join(dataDir, 'plugin_*/*.txt'))) {
         const relative = path.relative(dataDir, filePath)

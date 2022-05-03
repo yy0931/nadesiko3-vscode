@@ -91,7 +91,7 @@
 		"@types/fs-extra": "*",
 		"@types/glob": "*",
 		"@types/mocha": "*",
-		"@types/node": "*",
+		"@types/node": "^17.0.31",
 		"@types/node-fetch": "*",
 		"@types/semver": "*",
 		"@types/vscode": "^1.53.0",

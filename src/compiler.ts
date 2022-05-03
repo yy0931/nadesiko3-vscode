@@ -26,29 +26,29 @@ export default class ExtensionNako3Compiler extends NakoCompiler {
         const pluginDir = ExtensionNako3Compiler.getPluginDirectory(extensionPath)
         const log: string[] = []
         return this._loadDependencies(code, fileName, "", {
-            resolvePath: (name: string, token: { line: string; file: string | number }) => {
+            resolvePath: (name: string, token: { line: number; file: string }) => {
                 if (/\.js(\.txt)?$/.test(name) || /^[^.]*$/.test(name)) {
-                    return { filePath: path.resolve(CNako3.findPluginFile(name, fileName, pluginDir, log)), type: 'js' } // 変更: __dirnameをpluginDirで置換
+                    return { filePath: path.resolve(CNako3.findJSPluginFile(name, fileName, pluginDir, log)), type: 'js' } // 変更: __dirnameをpluginDirで置換
                 }
                 if (/\.nako3?(\.txt)?$/.test(name)) {
                     if (path.isAbsolute(name)) {
                         return { filePath: path.resolve(name), type: 'nako3' }
                     } else {
                         if (isUntitled) {
-                            throw new NakoImportError("相対パスによる取り込み文を使うには、ファイルを保存してください。", token.line, token.file) // 追加: Untitledなファイルではファイルパスを取得できない
+                            throw new NakoImportError("相対パスによる取り込み文を使うには、ファイルを保存してください。", token.file, token.line) // 追加: Untitledなファイルではファイルパスを取得できない
                         }
-                        return { filePath: path.join(path.dirname(token.file), name), type: 'nako3' }
+                        return { filePath: path.join(path.dirname(token.file + ""), name), type: 'nako3' }
                     }
                 }
                 return { filePath: name, type: 'invalid' }
             },
-            readNako3: (name: string, token: { line: string; file: number }) => {
+            readNako3: (name: string, token: { line: number; file: string }) => {
                 if (!fs.existsSync(name)) {
-                    throw new NakoImportError(`ファイル ${name} が存在しません。`, token.line, token.file)
+                    throw new NakoImportError(`ファイル ${name} が存在しません。`, token.file, token.line)
                 }
                 return { sync: true, value: fs.readFileSync(name).toString() }
             },
-            readJs: (name: string, token: { line: string; file: number }) => {
+            readJs: (name: string, token: { line: number; file: string }) => {
                 return {
                     sync: true,
                     value: () => {
@@ -59,7 +59,7 @@ export default class ExtensionNako3Compiler extends NakoCompiler {
                             if (err instanceof Error && err.message.startsWith('Cannot find module')) {
                                 msg += `\n次の場所を検索しました: ${log.join(', ')}`
                             }
-                            throw new NakoImportError(msg, token.line, token.file)
+                            throw new NakoImportError(msg, token.file, token.line)
                         }
                     }
                 }

@@ -2,6 +2,7 @@ import fs from 'fs'
 // @ts-ignore
 import nakoIndent from "nadesiko3/src/nako_indent.mjs"
 import { BackgroundTokenizer, EditorMarkers, LanguageFeatures } from "nadesiko3/src/wnako3_editor.mjs"
+import fetch from "node-fetch"
 import nodeHTMLParser from "node-html-parser"
 import path from 'path'
 import vscode from "vscode"
@@ -62,7 +63,7 @@ export const getTokenAt = (backgroundTokenizer: BackgroundTokenizer, position: v
 export const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
 
 // 5秒間試してだめだったらエラーを投げる。
-export const retry: <T>(f: () => Promise<T>) => Promise<T> = async (f): Promise<T> => {
+export const retry = async <T>(f: () => Promise<T>): Promise<T> => {
 	const startTime = Date.now()
 	while (true) {
 		try {
@@ -231,7 +232,7 @@ export const activate = function activate(context: vscode.ExtensionContext) {
 					return
 				}
 				// 例: `（Aを）表示する<span class="tooltip-plugin-name">PluginSystem</span>`
-				const root = nodeHTMLParser.parse(token.token.docHTML)
+				const root = nodeHTMLParser(token.token.docHTML)
 				const signature = root.childNodes[0].innerText
 				const pluginName = root.childNodes.length >= 2 ? root.childNodes[1].innerText : ""
 				const name = signature.lastIndexOf('）') === -1 ? signature : signature.slice(signature.lastIndexOf('）') + 1)
@@ -372,15 +373,13 @@ export const activate = function activate(context: vscode.ExtensionContext) {
 		// なでしこ言語のコンパイラのバージョンの変更
 		vscode.commands.registerCommand("nadesiko3.selectCompiler", async () => {
 			try {
-				const fetch = require("node-fetch").default
-
 				const res = await vscode.window.showWarningMessage("注意:\n1. この拡張機能はすべてのコンパイラのバージョンには対応していません。インストールするコンパイラのバージョンによってはなでしこ言語のVSCode拡張機能が起動しなくなる可能性があります。その場合、拡張機能を再インストールすることで初期化できます。\n2. コンパイラのバージョンは拡張機能のバージョンを更新するとリセットされます。この問題は将来修正される可能性があります。", { modal: true }, "確認")
 				if (res !== "確認") {
 					return
 				}
 
 				// コンパイラのバージョンのリストを取得する
-				const tags: { name: string; zipball_url: string; tarball_url: string; commit: { sha: string; url: string }; node_id: string }[] = await fetch(`https://api.github.com/repos/kujirahand/nadesiko3/tags`).then((res) => res.json())
+				const tags = (await fetch(`https://api.github.com/repos/kujirahand/nadesiko3/tags`).then((res) => res.json())) as { name: string; zipball_url: string; tarball_url: string; commit: { sha: string; url: string }; node_id: string }[]
 
 				// バージョン番号の選択
 				const picked = await vscode.window.showQuickPick(tags.map((tag): vscode.QuickPickItem => ({ label: tag.name, description: `commit:${tag.commit.sha.slice(0, 6)}` })), { canPickMany: false, placeHolder: "インストールするバージョンを選択...", matchOnDescription: true })
@@ -472,7 +471,7 @@ export const activate = function activate(context: vscode.ExtensionContext) {
 						await panel.webview.postMessage('getHTML')
 						// プログラムの実行結果とwebviewに表示されているHTMLを返す。
 						return {
-							log: nakoGlobal.log + '',
+							log: nakoGlobal?.log + '',
 							html: await retry(async () => {
 								if (returnValue === undefined) { throw new Error('returnValue is undefined') }
 								return returnValue

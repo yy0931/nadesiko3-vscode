@@ -1,6 +1,6 @@
-const fs = require('fs-extra')
-const path = require('path')
-const glob = require('glob')
+import fs from 'fs-extra'
+import glob from 'glob'
+import path from 'path'
 
 /**
  * ホバーで表示するドキュメントを生成する。
@@ -55,7 +55,7 @@ const copyStubModules = () => {
     }
 }
 
-module.exports = () => {
+export default () => {
     copyStubModules()
     return generateDocuments()
 }

@@ -2,8 +2,10 @@
 	"compilerOptions": {
 		"module": "commonJS",
 		"target": "es2019",
+		"allowJs": true,
 		"checkJs": true,
-		"strict": true
+		"strict": true,
+		"noImplicitAny": true
 	},
 	"include": [
 		"src",

@@ -3,4 +3,4 @@ const stub = new Proxy(() => stub, {
     set() { },
     has() { return true },
 })
-module.exports = stub
+export default stub

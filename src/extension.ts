@@ -1,29 +1,29 @@
-const vscode = require("vscode")
-const { LanguageFeatures, BackgroundTokenizer, EditorMarkers } = require("nadesiko3/src/wnako3_editor")
-const { getIndent } = require("nadesiko3/src/nako_indent")
-const path = require('path')
-const fs = require('fs')
-const nodeHTMLParser = require("node-html-parser")
-const ExtensionNako3Compiler = require("./compiler")
-const { ReadonlyDocumentAdapter, DocumentAdapter } = require("./document_adapter")
-const prepare = require("./prepare")
+import fs from 'fs'
+// @ts-ignore
+import nakoIndent from "nadesiko3/src/nako_indent.mjs"
+import { BackgroundTokenizer, EditorMarkers, LanguageFeatures } from "nadesiko3/src/wnako3_editor.mjs"
+import nodeHTMLParser from "node-html-parser"
+import path from 'path'
+import vscode from "vscode"
+import ExtensionNako3Compiler from "./compiler"
+import { DocumentAdapter, ReadonlyDocumentAdapter } from "./document_adapter"
+import prepare from "./prepare"
 
 /**
  * semantic highlight に使うtypeとmodifierのリスト。
  * 使える名前は https://code.visualstudio.com/api/language-extensions/semantic-highlight-guide#semantic-token-classification に書いてある。
  * そこに書いていない名前を使うと大抵の場合色が付かないが、package.jsonの contributes.semanticTokenScopes でtmlanguageのよくあるscope名に変換すれば色が付く。
  */
-const legend = new vscode.SemanticTokensLegend(
+export const legend = new vscode.SemanticTokensLegend(
 	["variable", "function", "macro", "comment", "string", "keyword", "number", "operator"], // tokenTypes
 	["readonly", "underline"])  // tokenModifiers。underlineはpackage.jsonでtmlanguageのmarkup.underlineに変換して下線を引いている。
-exports.legend = legend
 
 /**
  * Aceのtoken typeをVSCodeのtoken typeにマップする。[type, modifiers] を返す。返す値はlegendで定義されている必要がある。
  * @returns {[string, string[]] | null}
  */
-const mapTokenType = (/** @type {string} */type) => {
-	const modifiers = /** @type {Array<string>} */([])
+const mapTokenType = (type: string): [string, string[]] | null => {
+	const modifiers: string[] = []
 	if (type.endsWith(".markup.underline")) {
 		type = type.replace(".markup.underline", "")
 		modifiers.push("underline")
@@ -47,7 +47,7 @@ const mapTokenType = (/** @type {string} */type) => {
 }
 
 // `position` の位置にあるトークンを取得する。
-const getTokenAt = (/** @type {BackgroundTokenizer} */backgroundTokenizer, /** @type {vscode.Position} */position) => {
+export const getTokenAt = (backgroundTokenizer: BackgroundTokenizer, position: vscode.Position) => {
 	const tokens = backgroundTokenizer.getTokens(position.line)
 	let left = 0
 	for (let i = 0; i < tokens.length; i++) {
@@ -58,14 +58,11 @@ const getTokenAt = (/** @type {BackgroundTokenizer} */backgroundTokenizer, /** @
 	}
 	return null
 }
-exports.getTokenAt = getTokenAt
 
-const sleep = (/** @type {number} */ms) => /** @type {Promise<void>} */new Promise((resolve) => setTimeout(resolve, ms))
-exports.sleep = sleep
+export const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
 
 // 5秒間試してだめだったらエラーを投げる。
-/** @type {<T>(f: () => Promise<T>) => Promise<T>} */
-const retry = async (f) => {
+export const retry: <T>(f: () => Promise<T>) => Promise<T> = async (f): Promise<T> => {
 	const startTime = Date.now()
 	while (true) {
 		try {
@@ -79,10 +76,8 @@ const retry = async (f) => {
 		}
 	}
 }
-exports.retry = retry
 
-
-const safeReaddirSync = (/** @type {string} */filepath) => {
+const safeReaddirSync = (filepath: string) => {
 	try {
 		return fs.readdirSync(filepath)
 	} catch (e) {
@@ -91,10 +86,10 @@ const safeReaddirSync = (/** @type {string} */filepath) => {
 	}
 }
 
-const toSnakeCase = (/** @type {string} */s) => s.replace(/[A-Z]/g, (c) => '_' + c.toLowerCase()).replace(/^_+/, "")
+const toSnakeCase = (s: string) => s.replace(/[A-Z]/g, (c) => '_' + c.toLowerCase()).replace(/^_+/, "")
 
 // 現在フォーカスされているエディタの状態を持つ変数
-/** @type {{
+let state: {
 	readonly backgroundTokenizer: BackgroundTokenizer
 	readonly editor: vscode.TextEditor
 	readonly listeners: (() => void)[]
@@ -103,17 +98,14 @@ const toSnakeCase = (/** @type {string} */s) => s.replace(/[A-Z]/g, (c) => '_' +
 	needValidation: boolean
 	dispose(): void
 	readonly nako3: ExtensionNako3Compiler
-} | null} */
-let state = null
-/** @type {vscode.WebviewPanel | null} */
-let panel = null
+} | null = null
+let panel: vscode.WebviewPanel | null = null
 
 // 拡張機能が有効化されるとこの関数が呼ばれる。有効化されるタイミングは package.json のactivationEventsで定義される。
-exports.activate = function activate(/** @type {vscode.ExtensionContext} */context) {
+export const activate = function activate(context: vscode.ExtensionContext) {
 	const docs = prepare()
 
-	/** @type {vscode.DocumentSelector} */
-	const selector = { language: "nadesiko3" }
+	const selector: vscode.DocumentSelector = { language: "nadesiko3" }
 
 	const diagnosticCollection = vscode.languages.createDiagnosticCollection("nadesiko3")
 
@@ -135,7 +127,7 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 
 		// 別のエディタをフォーカスしたとき
 		if (state?.editor !== editor) {
-			const listeners = /** @type {Array<() => void>} */([])
+			const listeners: (() => void)[] = []
 			const nako3 = new ExtensionNako3Compiler()
 			state = {
 				backgroundTokenizer: new BackgroundTokenizer(
@@ -147,7 +139,7 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 				),
 				editor,
 				listeners,
-				waitTokenUpdate: () => /** @type {Promise<void>} */(new Promise((resolve) => { listeners.push(() => { resolve() }) })),
+				waitTokenUpdate: () => new Promise<void>((resolve) => { listeners.push(() => { resolve() }) }),
 				code: null,
 				needValidation: true,
 				dispose() {
@@ -186,7 +178,7 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 				state.needValidation = false
 				const code = state.editor.document.getText()
 				const file = state.editor.document.fileName
-				const diagnostics = /** @type {vscode.Diagnostic[]} */([])
+				const diagnostics: vscode.Diagnostic[] = []
 				const logger = state.nako3.replaceLogger()
 				logger.addListener('warn', ({ position, level, noColor }) => {
 					if (position.file === file && (level === 'warn' || level === 'error')) {
@@ -199,7 +191,7 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 					state.nako3.reset()
 					state.nako3.compile(code, file, false)
 				} catch (err) {
-					state.nako3.logger.error(/** @type {Error} */(err))
+					state.nako3.logger.error(err as Error)
 				}
 				diagnosticCollection.set(state.editor.document.uri, diagnostics)
 			}
@@ -210,8 +202,7 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 		context.subscriptions.push({ dispose() { canceled = true } })
 	}
 
-	/** @type {readonly string[]} */
-	const builtinPluginNames = safeReaddirSync(ExtensionNako3Compiler.getPluginDirectory(context.extensionPath))
+	const builtinPluginNames: readonly string[] = safeReaddirSync(ExtensionNako3Compiler.getPluginDirectory(context.extensionPath))
 		.filter((f) => f.startsWith("plugin_") && f.endsWith(".js"))
 
 	// subscriptionsに { dispose(): any } を実装するオブジェクトをpushしておくと、拡張機能の deactivate() 時に自動的に dispose() を呼んでくれる。
@@ -262,12 +253,12 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 
 				const left = document.lineAt(position.line).text.slice(0, position.character)
 				// 行が"！「"で始まってカーソルより左に"」"が無いなら、ファイル名を補完する。
-				const indent = getIndent(left)
+				const indent = nakoIndent.getIndent(left)
 				if ((left.slice(indent.length).startsWith("!「") || left.slice(indent.length).startsWith("！「")) && !left.includes("」")) {
 					const prefix = left.slice(indent.length + 2)
 					// ./ か ../ で始まるならローカルのファイル名を補完する。そうでなければ組み込みのプラグイン名を補完する。
 					if ((/^\.\.?(\/|\\)/.test(prefix)) && !state.editor.document.isUntitled) {
-						const items = /** @type {vscode.CompletionItem[]} */([])
+						const items: vscode.CompletionItem[] = []
 
 						// prefix="./" のとき basename="", range=[2, 2], dirname="./"
 						// prefix="./foo/bar" のとき basename="bar", range=[6, 9], dirname="./foo"
@@ -349,8 +340,8 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 		// プログラム上にボタンを表示させる。
 		vscode.languages.registerCodeLensProvider(selector, {
 			/** @returns {vscode.ProviderResult<vscode.CodeLens[]>} */
-			provideCodeLenses: (/** @type {vscode.TextDocument} */document, /** @type {vscode.CancellationToken} */token) => {
-				const lens = /** @type {vscode.CodeLens[]} */([])
+			provideCodeLenses: (document: vscode.TextDocument, token: vscode.CancellationToken): vscode.ProviderResult<vscode.CodeLens[]> => {
+				const lens: vscode.CodeLens[] = []
 				for (const v of LanguageFeatures.getCodeLens(new ReadonlyDocumentAdapter(document))) {
 					lens.push(new vscode.CodeLens(
 						new vscode.Range(v.start.row, 0, v.start.row, 0),
@@ -389,11 +380,10 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 				}
 
 				// コンパイラのバージョンのリストを取得する
-				/** @type {{ name: string, zipball_url: string, tarball_url: string, commit: { sha: string, url: string }, node_id: string }[]} */
-				const tags = await fetch(`https://api.github.com/repos/kujirahand/nadesiko3/tags`).then((res) => /** @type {any} */(res.json()))
+				const tags: { name: string; zipball_url: string; tarball_url: string; commit: { sha: string; url: string }; node_id: string }[] = await fetch(`https://api.github.com/repos/kujirahand/nadesiko3/tags`).then((res) => res.json())
 
 				// バージョン番号の選択
-				const picked = await vscode.window.showQuickPick(tags.map((tag) => /** @type {vscode.QuickPickItem} */({ label: tag.name, description: `commit:${tag.commit.sha.slice(0, 6)}` })), { canPickMany: false, placeHolder: "インストールするバージョンを選択...", matchOnDescription: true })
+				const picked = await vscode.window.showQuickPick(tags.map((tag): vscode.QuickPickItem => ({ label: tag.name, description: `commit:${tag.commit.sha.slice(0, 6)}` })), { canPickMany: false, placeHolder: "インストールするバージョンを選択...", matchOnDescription: true })
 				if (picked === undefined) {
 					return
 				}
@@ -420,7 +410,7 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 		}),
 
 		// [ファイルを実行] ボタンを押したときの動作を設定する。
-		vscode.commands.registerCommand("nadesiko3.runActiveFile", async (/** @type {string | boolean | vscode.ExtensionContext} */test = false, /** @type {boolean} */vscodeTest = false) => {
+		vscode.commands.registerCommand("nadesiko3.runActiveFile", async (test: string | boolean | vscode.ExtensionContext = false, vscodeTest: boolean = false) => {
 			// menusのボタンから実行すると第一引数にExtensionContextが渡される。
 			if (typeof test === "object") {
 				test = false
@@ -464,7 +454,7 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 				try {
 					await nako3.loadDependencies(code, fileName, context.extensionPath, editor.document.isUntitled)
 				} catch (err) {
-					logger.error(/** @type {Error} */(err))
+					logger.error(err as Error)
 					throw err
 				}
 				let nakoGlobal
@@ -476,9 +466,8 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 					nakoGlobal = nako3.run(code, fileName)
 				}
 				if (vscodeTest) {
-					/** @type {unknown} */
-					let returnValue
-					const d = panel.webview.onDidReceiveMessage((/** @type {unknown} */data) => { returnValue = data }, undefined, context.subscriptions)
+					let returnValue: unknown
+					const d = panel.webview.onDidReceiveMessage((data: unknown) => { returnValue = data }, undefined, context.subscriptions)
 					try {
 						await panel.webview.postMessage('getHTML')
 						// プログラムの実行結果とwebviewに表示されているHTMLを返す。
@@ -500,7 +489,7 @@ exports.activate = function activate(/** @type {vscode.ExtensionContext} */conte
 	)
 }
 
-exports.deactivate = function deactivate() {
+export const deactivate = function deactivate() {
 	state?.dispose()
 	panel?.dispose()
 }

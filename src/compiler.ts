@@ -1,29 +1,32 @@
-const NakoCompiler = require("nadesiko3/src/nako3")
-const PluginNode = require('nadesiko3/src/plugin_node')
-const { NakoImportError } = require("nadesiko3/src/nako_errors")
-const CNako3 = require("nadesiko3/src/cnako3")
-const path = require("path")
-const fs = require("fs")
+import fs from "fs"
+// @ts-ignore
+import { CNako3 } from "nadesiko3/src/cnako3mod.mjs"
+// @ts-ignore
+import { NakoCompiler } from "nadesiko3/src/nako3.mjs"
+import { NakoImportError } from "nadesiko3/src/nako_errors.mjs"
+import _version from "nadesiko3/src/nako_version.mjs"
+import PluginNode from 'nadesiko3/src/plugin_node.mjs'
+import path from "path"
 
-module.exports = class ExtensionNako3Compiler extends NakoCompiler {
-    static version = require("nadesiko3/src/nako_version")
+export default class ExtensionNako3Compiler extends NakoCompiler {
+    static version = _version
 
     constructor() {
         super(undefined)
         this.addPluginObject('PluginNode', PluginNode)
     }
 
-    static getPluginDirectory(/** @type {string} */extensionPath) {
+    static getPluginDirectory(extensionPath: string) {
         return path.join(extensionPath, "node_modules/nadesiko3/src")
     }
 
     // 依存ファイルを取り込む。コメントを書いた部分以外はCNako3のコードと同じ
     // NOTE: ウェブから依存するファイルをダウンロードできるように変更する場合は、diagnosticsで使うとき、loadDependenciesを呼ばないか、手動で実行されたときに存在した依存ファイルだけをホワイトリストで許可するべき。
-    loadDependencies(/** @type {string} */code, /** @type {string} */fileName, /** @type {string} */extensionPath, /** @type {boolean} */isUntitled) {
+    loadDependencies(code: string, fileName: string, extensionPath: string, isUntitled: boolean) {
         const pluginDir = ExtensionNako3Compiler.getPluginDirectory(extensionPath)
-        const log = /** @type {Array<string>} */([])
+        const log: string[] = []
         return this._loadDependencies(code, fileName, "", {
-            resolvePath: (name, token) => {
+            resolvePath: (name: string, token: { line: string; file: string | number }) => {
                 if (/\.js(\.txt)?$/.test(name) || /^[^.]*$/.test(name)) {
                     return { filePath: path.resolve(CNako3.findPluginFile(name, fileName, pluginDir, log)), type: 'js' } // 変更: __dirnameをpluginDirで置換
                 }
@@ -39,13 +42,13 @@ module.exports = class ExtensionNako3Compiler extends NakoCompiler {
                 }
                 return { filePath: name, type: 'invalid' }
             },
-            readNako3: (name, token) => {
+            readNako3: (name: string, token: { line: string; file: number }) => {
                 if (!fs.existsSync(name)) {
                     throw new NakoImportError(`ファイル ${name} が存在しません。`, token.line, token.file)
                 }
                 return { sync: true, value: fs.readFileSync(name).toString() }
             },
-            readJs: (name, token) => {
+            readJs: (name: string, token: { line: string; file: number }) => {
                 return {
                     sync: true,
                     value: () => {

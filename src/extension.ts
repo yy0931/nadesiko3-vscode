@@ -3,7 +3,7 @@ import fs from 'fs'
 import nakoIndent from "nadesiko3/src/nako_indent.mjs"
 import { BackgroundTokenizer, EditorMarkers, LanguageFeatures } from "nadesiko3/src/wnako3_editor.mjs"
 import fetch from "node-fetch"
-import nodeHTMLParser from "node-html-parser"
+import * as nodeHTMLParser from "node-html-parser"
 import path from 'path'
 import vscode from "vscode"
 import ExtensionNako3Compiler from "./compiler"
@@ -232,7 +232,7 @@ export const activate = function activate(context: vscode.ExtensionContext) {
 					return
 				}
 				// 例: `（Aを）表示する<span class="tooltip-plugin-name">PluginSystem</span>`
-				const root = nodeHTMLParser(token.token.docHTML)
+				const root = nodeHTMLParser.parse(token.token.docHTML)
 				const signature = root.childNodes[0].innerText
 				const pluginName = root.childNodes.length >= 2 ? root.childNodes[1].innerText : ""
 				const name = signature.lastIndexOf('）') === -1 ? signature : signature.slice(signature.lastIndexOf('）') + 1)
@@ -373,7 +373,7 @@ export const activate = function activate(context: vscode.ExtensionContext) {
 		// なでしこ言語のコンパイラのバージョンの変更
 		vscode.commands.registerCommand("nadesiko3.selectCompiler", async () => {
 			try {
-				const res = await vscode.window.showWarningMessage("注意:\n1. この拡張機能はすべてのコンパイラのバージョンには対応していません。インストールするコンパイラのバージョンによってはなでしこ言語のVSCode拡張機能が起動しなくなる可能性があります。その場合、拡張機能を再インストールすることで初期化できます。\n2. コンパイラのバージョンは拡張機能のバージョンを更新するとリセットされます。この問題は将来修正される可能性があります。", { modal: true }, "確認")
+				const res = await vscode.window.showWarningMessage("注意:\n1. VSCode上のなでしこ言語はすべてのコンパイラのバージョンには対応していません。インストールするコンパイラのバージョンによってはなでしこ言語のVSCode拡張機能が起動しなくなる可能性があります。その場合、拡張機能を再インストールすることで初期化できます。\n2. コンパイラのバージョンは拡張機能のバージョンを更新するとリセットされます。この問題は将来修正される可能性があります。", { modal: true }, "確認")
 				if (res !== "確認") {
 					return
 				}
@@ -447,7 +447,7 @@ export const activate = function activate(context: vscode.ExtensionContext) {
 			const code = editor.document.getText()
 			const fileName = editor.document.fileName
 			if (/^[！!][「『]plugin_browser[」』]を取り込む/.test(code)) {
-				logger.warn("plugin_browserを取り込んでいますが、この拡張機能はブラウザでの実行には対応していません。")
+				logger.warn("VSCode上のなでしこ言語はブラウザ用のコードを実行できません。")
 			}
 			try {
 				try {

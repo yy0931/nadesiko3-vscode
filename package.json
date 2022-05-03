@@ -83,22 +83,17 @@
 		]
 	},
 	"scripts": {
-		"test": "node ./test/runTest.js",
 		"build": "npx esbuild --bundle --target=esnext --format=cjs --platform=node --outdir=out --external:vscode --define:import.meta.url=import_meta_url --inject:./src/import.meta.url-polyfill.js src/extension.ts"
 	},
 	"devDependencies": {
-		"@types/chai": "*",
 		"@types/fs-extra": "*",
 		"@types/glob": "*",
-		"@types/mocha": "*",
 		"@types/node": "^17.0.31",
 		"@types/node-fetch": "*",
 		"@types/semver": "*",
 		"@types/vscode": "^1.53.0",
 		"@types/vscode-webview": "^1.53.0",
-		"chai": "*",
 		"esbuild": "^0.14.38",
-		"mocha": "*",
 		"nadesiko3doc": "git+https://github.com/kujirahand/nadesiko3doc",
 		"semver": "*",
 		"typescript": "*",

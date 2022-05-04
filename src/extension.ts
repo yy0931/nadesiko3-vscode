@@ -204,7 +204,7 @@ export const activate = function activate(context: vscode.ExtensionContext) {
 	}
 
 	const builtinPluginNames: readonly string[] = safeReaddirSync(ExtensionNako3Compiler.getPluginDirectory(context.extensionPath))
-		.filter((f) => f.startsWith("plugin_") && f.endsWith(".js"))
+		.filter((f) => f.startsWith("plugin_") && f.endsWith(".mjs"))
 
 	// subscriptionsに { dispose(): any } を実装するオブジェクトをpushしておくと、拡張機能の deactivate() 時に自動的に dispose() を呼んでくれる。
 	context.subscriptions.push(

@@ -27,7 +27,7 @@ export default class ExtensionNako3Compiler extends NakoCompiler {
         const log: string[] = []
         return this._loadDependencies(code, fileName, "", {
             resolvePath: (name: string, token: { line: number; file: string }) => {
-                if (/\.js(\.txt)?$/.test(name) || /^[^.]*$/.test(name)) {
+                if (/\.m?js(\.txt)?$/.test(name)) {
                     return { filePath: path.resolve(CNako3.findJSPluginFile(name, fileName, pluginDir, log)), type: 'js' } // 変更: __dirnameをpluginDirで置換
                 }
                 if (/\.nako3?(\.txt)?$/.test(name)) {
@@ -40,7 +40,7 @@ export default class ExtensionNako3Compiler extends NakoCompiler {
                         return { filePath: path.join(path.dirname(token.file + ""), name), type: 'nako3' }
                     }
                 }
-                return { filePath: name, type: 'invalid' }
+                throw new NakoImportError(`ファイル『${name}』は拡張子が(.nako3|.js|.js.txt|.mjs|.mjs.txt)以外なので取り込めません。`, token.file, token.line)
             },
             readNako3: (name: string, token: { line: number; file: string }) => {
                 if (!fs.existsSync(name)) {
@@ -50,10 +50,11 @@ export default class ExtensionNako3Compiler extends NakoCompiler {
             },
             readJs: (name: string, token: { line: number; file: string }) => {
                 return {
-                    sync: true,
-                    value: () => {
+                    sync: false,
+                    value: (async (): Promise<() => object> => {
                         try {
-                            return require(name)
+                            const m = await import(name)
+                            return () => m.default
                         } catch (/** @type {unknown} */err) {
                             let msg = `プラグイン ${name} の取り込みに失敗: ${err instanceof Error ? err.message : err + ''}`
                             if (err instanceof Error && err.message.startsWith('Cannot find module')) {
@@ -61,7 +62,7 @@ export default class ExtensionNako3Compiler extends NakoCompiler {
                             }
                             throw new NakoImportError(msg, token.file, token.line)
                         }
-                    }
+                    })()
                 }
             },
         })

@@ -83,7 +83,7 @@
 		]
 	},
 	"scripts": {
-		"build": "esbuild --target=esnext --format=cjs --platform=node --outdir=nadesiko3-plugins --define:import.meta.url=import_meta_url --inject:./src/import.meta.url-polyfill.js node_modules/nadesiko3/src/*.mjs && node replace-mjs.js && esbuild --bundle --target=esnext --format=cjs --platform=node --outdir=out --external:vscode --define:import.meta.url=import_meta_url --inject:./src/import.meta.url-polyfill.js src/extension.ts",
+		"build": "rm node_modules/nadesiko3/src/index.mjs && esbuild --target=esnext --format=cjs --platform=node --outdir=nadesiko3-plugins --define:import.meta.url=import_meta_url --inject:./src/import.meta.url-polyfill.js node_modules/nadesiko3/src/*.mjs && node replace-mjs.js && esbuild --bundle --target=esnext --format=cjs --platform=node --outdir=out --external:vscode --define:import.meta.url=import_meta_url --inject:./src/import.meta.url-polyfill.js src/extension.ts",
 		"vscode:prepublish": "yarn build",
 		"install-extension": "vsce package --out out.vsix && code --install-extension ./out.vsix"
 	},

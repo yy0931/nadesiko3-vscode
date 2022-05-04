@@ -83,7 +83,8 @@
 		]
 	},
 	"scripts": {
-		"build": "npx esbuild --bundle --target=esnext --format=cjs --platform=node --outdir=out --external:vscode --define:import.meta.url=import_meta_url --inject:./src/import.meta.url-polyfill.js src/extension.ts"
+		"build": "npx esbuild --bundle --target=esnext --format=cjs --platform=node --outdir=out --external:vscode --define:import.meta.url=import_meta_url --inject:./src/import.meta.url-polyfill.js src/extension.ts",
+		"vscode:prepublish": "yarn build"
 	},
 	"devDependencies": {
 		"@types/fs-extra": "*",

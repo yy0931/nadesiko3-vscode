@@ -419,9 +419,7 @@ export const activate = function activate(context: vscode.ExtensionContext) {
 					throw err
 				}
 				let nakoGlobal
-				if (typeof test === "string") {
-					nakoGlobal = nako3.test(code, fileName, "", test)
-				} else if (test) {
+				if (test) {
 					nakoGlobal = nako3.test(code, fileName)
 				} else {
 					nakoGlobal = nako3.run(code, fileName)

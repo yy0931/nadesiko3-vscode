@@ -51,9 +51,9 @@
   integrity sha512-x3Cb/SMa1IwRHfSvKaZDZOTh4cNoG505c3NjTqGlMC082m++x/ETUmtYniDsw6SSmYzZXO8KBNhYxR0+VqymqA==
 
 "@types/vscode@^1.53.0":
-  version "1.66.0"
-  resolved "https://registry.yarnpkg.com/@types/vscode/-/vscode-1.66.0.tgz#e90e1308ad103f2bd31b72c17b8031b4cec0713d"
-  integrity sha512-ZfJck4M7nrGasfs4A4YbUoxis3Vu24cETw3DERsNYtDZmYSYtk6ljKexKFKhImO/ZmY6ZMsmegu2FPkXoUFImA==
+  version "1.67.0"
+  resolved "https://registry.yarnpkg.com/@types/vscode/-/vscode-1.67.0.tgz#8eaba41d1591aa02f5d960b7dfae3b16e066f08c"
+  integrity sha512-GH8BDf8cw9AC9080uneJfulhSa7KHSMI2s/CyKePXoGNos9J486w2V4YKoeNUqIEkW4hKoEAWp6/cXTwyGj47g==
 
 abort-controller@*:
   version "3.0.0"
@@ -268,14 +268,14 @@ call-bind@^1.0.0:
     get-intrinsic "^1.0.2"
 
 caniuse-db@^1.0.30001332:
-  version "1.0.30001335"
-  resolved "https://registry.yarnpkg.com/caniuse-db/-/caniuse-db-1.0.30001335.tgz#2251c4f8b7074f868f422a0674ff3660a42b6712"
-  integrity sha512-AxdlkjdSGkGwqCD0btb4mm7JDRG8cAvbRpJ50trfHIc/bC0W9tXb41id6/+Ybi3ip/l2G5I5FmhGCRHPhu194g==
+  version "1.0.30001338"
+  resolved "https://registry.yarnpkg.com/caniuse-db/-/caniuse-db-1.0.30001338.tgz#d15c90fd2bfaeb435d445aca2e010169d35fa103"
+  integrity sha512-tB+B9Qe9uWx1vJvfSjHlvZ5LNUtvavY98l++SJ8aYiZ6THxJCPxS14z1HVuTZ2sAUaHfvgHKcpby0TV6yXhyzA==
 
 caniuse-lite@^1.0.30001332:
-  version "1.0.30001335"
-  resolved "https://registry.yarnpkg.com/caniuse-lite/-/caniuse-lite-1.0.30001335.tgz#899254a0b70579e5a957c32dced79f0727c61f2a"
-  integrity sha512-ddP1Tgm7z2iIxu6QTtbZUv6HJxSaV/PZeSrWFZtbY4JZ69tOeNhBCl3HyRQgeNZKE5AOn1kpV7fhljigy0Ty3w==
+  version "1.0.30001338"
+  resolved "https://registry.yarnpkg.com/caniuse-lite/-/caniuse-lite-1.0.30001338.tgz#b5dd7a7941a51a16480bdf6ff82bded1628eec0d"
+  integrity sha512-1gLHWyfVoRDsHieO+CaeYe7jSo/MT7D7lhaXUiwwbuR5BwQxORs0f1tAwUSQr3YbxRXJvxHM/PA5FfPQRnsPeQ==
 
 chainsaw@~0.1.0:
   version "0.1.0"
@@ -443,9 +443,9 @@ data-uri-to-buffer@^4.0.0:
   integrity sha512-Vr3mLBA8qWmcuschSLAOogKgQ/Jwxulv3RNE4FXnYWRGujzrRWQI4m12fQqRkwX06C0KanhLr4hK+GydchZsaA==
 
 dayjs@^1.11.1:
-  version "1.11.1"
-  resolved "https://registry.yarnpkg.com/dayjs/-/dayjs-1.11.1.tgz#90b33a3dda3417258d48ad2771b415def6545eb0"
-  integrity sha512-ER7EjqVAMkRRsxNCC5YqJ9d9VQYuWdGt7aiH2qA5R5wt8ZmWaP2dLUSIK6y/kVzLMlmh1Tvu5xUf4M/wdGJ5KA==
+  version "1.11.2"
+  resolved "https://registry.yarnpkg.com/dayjs/-/dayjs-1.11.2.tgz#fa0f5223ef0d6724b3d8327134890cfe3d72fbe5"
+  integrity sha512-F4LXf1OeU9hrSYRPTTj/6FbO4HTjPKXvEIC1P2kcnFurViINCVk3ZV0xAS3XVx9MkMsXbbqlK6hjseaYbgKEHw==
 
 debug@2.6.9:
   version "2.6.9"
@@ -541,9 +541,9 @@ ee-first@1.1.1:
   integrity sha1-WQxhFWsK4vTwJVcyoViyZrxWsh0=
 
 electron-to-chromium@^1.4.118:
-  version "1.4.131"
-  resolved "https://registry.yarnpkg.com/electron-to-chromium/-/electron-to-chromium-1.4.131.tgz#ca42d22eac0fe545860fbc636a6f4a7190ba70a9"
-  integrity sha512-oi3YPmaP87hiHn0c4ePB67tXaF+ldGhxvZnT19tW9zX6/Ej+pLN0Afja5rQ6S+TND7I9EuwQTT8JYn1k7R7rrw==
+  version "1.4.137"
+  resolved "https://registry.yarnpkg.com/electron-to-chromium/-/electron-to-chromium-1.4.137.tgz#186180a45617283f1c012284458510cd99d6787f"
+  integrity sha512-0Rcpald12O11BUogJagX3HsCN3FE83DSqWjgXoHo5a72KUKMSfI39XBgJpgNNxS9fuGzytaFjE06kZkiVFy2qA==
 
 emoji-regex@^8.0.0:
   version "8.0.0"
@@ -1265,8 +1265,8 @@ mute-stream@~0.0.4:
   integrity sha512-nnbWWOkoWyUsTjKrhgD0dcz22mdkSnpYqbEjIm2nhwhuxlSkpywJmBo8h0ZqJdkp73mb90SssHkN4rsRaBAfAA==
 
 "nadesiko3@git+https://github.com/kujirahand/nadesiko3.git":
-  version "3.3.4"
-  resolved "git+https://github.com/kujirahand/nadesiko3.git#88ffd108d14cd27333212b6203440853a46c5953"
+  version "3.3.13"
+  resolved "git+https://github.com/kujirahand/nadesiko3.git#2b6a46d7c5c5843f46fde8081f4c1f04af7b9610"
   dependencies:
     body-parser "^1.20.0"
     browserslist "^4.20.2"
@@ -1288,7 +1288,7 @@ mute-stream@~0.0.4:
 
 "nadesiko3doc@git+https://github.com/kujirahand/nadesiko3doc":
   version "0.0.0"
-  resolved "git+https://github.com/kujirahand/nadesiko3doc#4d3b5b786861fac30aed446cd82a8392aa4b42fd"
+  resolved "git+https://github.com/kujirahand/nadesiko3doc#234f269278c0c5af9472c020217947dbd05cb462"
 
 napi-build-utils@^1.0.1:
   version "1.0.2"

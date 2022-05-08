@@ -74,11 +74,6 @@
 				"title": "Test Active File",
 				"category": "Nadesiko3",
 				"icon": "$(testing-run-icon)"
-			},
-			{
-				"command": "nadesiko3.selectCompiler",
-				"title": "Select Compiler",
-				"category": "Nadesiko3"
 			}
 		]
 	},
@@ -91,7 +86,6 @@
 		"@types/fs-extra": "*",
 		"@types/glob": "*",
 		"@types/node": "~16.0.0",
-		"@types/node-fetch": "*",
 		"@types/semver": "*",
 		"@types/vscode": "~1.53.0",
 		"@types/vscode-webview": "^1.53.0",
@@ -104,11 +98,9 @@
 	},
 	"dependencies": {
 		"abort-controller": "*",
-		"adm-zip": "*",
 		"fs-extra": "*",
 		"glob": "*",
 		"nadesiko3": "git+https://github.com/kujirahand/nadesiko3.git",
-		"node-fetch": "*",
 		"node-html-parser": "*"
 	}
 }

@@ -2,7 +2,6 @@ import fs from 'fs'
 // @ts-ignore
 import nakoIndent from "nadesiko3/src/nako_indent.mjs"
 import { BackgroundTokenizer, EditorMarkers, LanguageFeatures } from "nadesiko3/src/wnako3_editor.mjs"
-import fetch from "node-fetch"
 import * as nodeHTMLParser from "node-html-parser"
 import path from 'path'
 import vscode from "vscode"
@@ -369,44 +368,6 @@ export const activate = function activate(context: vscode.ExtensionContext) {
 
 		vscode.commands.registerCommand("nadesiko3.testActiveFile", async () => {
 			await vscode.commands.executeCommand("nadesiko3.runActiveFile", true)
-		}),
-
-		// なでしこ言語のコンパイラのバージョンの変更
-		vscode.commands.registerCommand("nadesiko3.selectCompiler", async () => {
-			try {
-				const res = await vscode.window.showWarningMessage("注意:\n1. VSCode上のなでしこ言語はすべてのコンパイラのバージョンには対応していません。インストールするコンパイラのバージョンによってはなでしこ言語のVSCode拡張機能が起動しなくなる可能性があります。その場合、拡張機能を再インストールすることで初期化できます。\n2. コンパイラのバージョンは拡張機能のバージョンを更新するとリセットされます。この問題は将来修正される可能性があります。", { modal: true }, "確認")
-				if (res !== "確認") {
-					return
-				}
-
-				// コンパイラのバージョンのリストを取得する
-				const tags = (await fetch(`https://api.github.com/repos/kujirahand/nadesiko3/tags`).then((res) => res.json())) as { name: string; zipball_url: string; tarball_url: string; commit: { sha: string; url: string }; node_id: string }[]
-
-				// バージョン番号の選択
-				const picked = await vscode.window.showQuickPick(tags.map((tag): vscode.QuickPickItem => ({ label: tag.name, description: `commit:${tag.commit.sha.slice(0, 6)}` })), { canPickMany: false, placeHolder: "インストールするバージョンを選択...", matchOnDescription: true })
-				if (picked === undefined) {
-					return
-				}
-				const tag = picked.label
-
-				await vscode.window.withProgress({ title: "コンパイラをダウンロードしています...", location: vscode.ProgressLocation.Notification, cancellable: true }, async (progress, token) => {
-					// GitHubからコンパイラのソースコードをダウンロードする
-					const ac = new (require("abort-controller").default)()
-					token.onCancellationRequested(() => { ac.abort() })
-					const buf = await fetch(`https://github.com/kujirahand/nadesiko3/archive/${tag}.zip`, { signal: ac.signal }).then((res) => res.buffer())
-
-					// Zipファイルとして解凍して node_modules/nadesiko3 に配置
-					new (require("adm-zip"))(buf).extractEntryTo(`nadesiko3-${tag}/`, context.extensionPath)
-					const dst = path.join(context.extensionPath, "node_modules/nadesiko3")
-					fs.rmSync(dst, { recursive: true })
-					fs.renameSync(path.join(context.extensionPath, `nadesiko3-${tag}`), dst)
-				})
-
-				vscode.window.showInformationMessage(`${tag} に更新しました。VSCodeを再起動してください。すべてのウィンドウを閉じて、少し待ってから開いてください。`) // NOTE: メッセージが短くないと後ろのほうが隠れてしまう
-			} catch (err) {
-				vscode.window.showErrorMessage(`なでしこ言語の更新に失敗: ${err}`)
-				console.error(err)
-			}
 		}),
 
 		// [ファイルを実行] ボタンを押したときの動作を設定する。

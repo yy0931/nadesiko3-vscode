@@ -53,8 +53,8 @@ export default class ExtensionNako3Compiler extends NakoCompiler {
             },
             readJs: (name: string, token: { line: number; file: string }) => {
                 return {
-                    sync: true,
-                    value: () => {
+                    sync: false,
+                    value: (async () => () => {
                         try {
                             return require(name).default
                         } catch (err: unknown) {
@@ -64,7 +64,7 @@ export default class ExtensionNako3Compiler extends NakoCompiler {
                             }
                             throw new NakoImportError(msg, token.file, token.line)
                         }
-                    }
+                    })()
                 }
             },
         })
